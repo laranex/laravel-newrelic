@@ -26,7 +26,7 @@ To install the Laravel New Relic package, follow these steps:
 3. (Optional) Configure your New Relic application name and license key in your `.env` file:
 
    ```env
-   NEWRELIC_LICENSE_KEY="your_license_key"
+   NEW_RELIC_API_KEY="your_license_key"
    ```
 
    These values will be automatically picked up by the package.
