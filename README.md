@@ -49,7 +49,7 @@ If you discover any security issues, please report them in accordance with our s
 ## Contributors
 
 - [Soe Thura](https://github.com/thixpin)
-- [Paing Soe Hteik](https://github.com/paisoedev)
+- [Paing Soe Htike](https://github.com/paisoedev)
 
 ## Versions
 
