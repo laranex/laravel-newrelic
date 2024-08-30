@@ -1,25 +1,50 @@
-# Laravel Newrelic
+# Laravel New Relic
 
-Laravel Newrelic is a package that provides custom log channel for Newrelic, also provides the listeners to split the octane transaction into each job and event transactions.
+Laravel New Relic is a package that provides a custom log channel for New Relic. It also includes listeners to split Octane transactions into individual job and event transactions.
 
-## Why do'd use the Newrelic Monolog Enricher?
-[Newrelic Monolog Enricher](https://github.com/newrelic/newrelic-monolog-logenricher-php) is not compatible with the Monolog 3.0 and They are not updating the package. So, I have created this package to provide the custom log channel for Newrelic.
+## Why we use Laravel Newrelic Instead of New Relic Monolog Enricher?
 
-### Changelog
+The [New Relic Monolog Enricher](https://github.com/newrelic/newrelic-monolog-logenricher-php) is not compatible with Monolog 3.0, and it has not been updated to address this issue. To overcome this limitation, I created this package to provide a custom log channel specifically designed for New Relic.
 
-Please see [CHANGELOG](CHANGELOG.md) for more information what has changed recently.
+## Installation
+
+To install the Laravel New Relic package, follow these steps:
+
+1. Install the package via Composer:
+
+   ```bash
+   composer require your-vendor/laravel-newrelic
+   ```
+2. Change the log channel in your `.env` file:
+
+   ```env
+   LOG_CHANNEL=newrelic
+   ```
+
+3. (Optional) Configure your New Relic application name and license key in your `.env` file:
+
+   ```env
+   NEWRELIC_LICENSE_KEY="your_license_key"
+   ```
+
+   These values will be automatically picked up by the package.
+
+
+## Changelog
+
+For detailed information on recent changes, please see the [CHANGELOG](CHANGELOG.md).
 
 ## Contributing
 
-Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
+We welcome contributions! Please see the [CONTRIBUTING](CONTRIBUTING.md) guide for more details.
 
-### Security
+## Security
 
-If you discover any security related issues, please email naythukhant644@gmail.com instead of using the issue tracker.
+If you discover any security issues, please report them in accordance with our security policy outlined in the [CONTRIBUTING](CONTRIBUTING.md) guide.
 
 ## Credits
-- [Newrelic Monolog Enricher](https://github.com/newrelic/newrelic-monolog-logenricher-php)
 
+- [New Relic Monolog Enricher](https://github.com/newrelic/newrelic-monolog-logenricher-php)
 
 ## Contributors
 
@@ -28,19 +53,19 @@ If you discover any security related issues, please email naythukhant644@gmail.c
 
 ## Versions
 
-| Version       | Date       |
-|---------------|------------|
-| [1.0.0](#100) | 2024-08-31 |
-
+| Version       | Release Date |
+|---------------|--------------|
+| [1.0.0](#100) | 2024-08-31   |
 
 ### 1.0.0
 
-* First release
-
+- Initial release
 
 ## License
 
-The Apache License, Version 2.0. Please see [License File](LICENSE.md) for more information.
+This project is primarily licensed under the Apache License, Version 2.0. For more details, please refer to the [License File](LICENSE.md).
 
+Please note that this package includes components based on the New Relic Monolog Enricher, which are subject to the New Relic License. All original code contributed to this package, excluding the New Relic Monolog Enricher components, is also made available under the [MIT License](MIT-LICENSE.md).
 
+Users are free to use, modify, and distribute the original code under either the Apache License 2.0 or the MIT License, depending on their preference, with the exception of the New Relic Monolog Enricher components, which must be used in accordance with the New Relic License.
 
