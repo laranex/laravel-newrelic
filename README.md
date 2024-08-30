@@ -8,6 +8,8 @@ The [New Relic Monolog Enricher](https://github.com/newrelic/newrelic-monolog-lo
 
 ## Installation
 
+Before installing the Laravel New Relic package, make sure you have the [New Relic PHP agent](https://docs.newrelic.com/docs/agents/php-agent/getting-started/introduction-new-relic-php) installed on your server.
+
 To install the Laravel New Relic package, follow these steps:
 
 1. Install the package via Composer:
