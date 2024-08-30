@@ -19,12 +19,6 @@ trait EventMap
         'Laravel\Octane\Events\RequestTerminated' => [
             Listeners\StopNewrelicWebTransaction::class,
         ],
-        'Laravel\Octane\Events\TaskReceived' => [
-            Listeners\StartNewrelicWebTransaction::class,
-        ],
-        'Laravel\Octane\Events\TaskTerminated' => [
-            Listeners\StopNewrelicWebTransaction::class,
-        ],
         'Laravel\Horizon\Events\JobReleased' => [
             Listeners\RestartNewrelicTransaction::class,
         ],
