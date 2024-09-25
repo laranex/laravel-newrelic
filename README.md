@@ -15,7 +15,7 @@ To install the Laravel New Relic package, follow these steps:
 1. Install the package via Composer:
 
    ```bash
-   composer require your-vendor/laravel-newrelic
+   composer require laranex/laravel-newrelic
    ```
 2. Change the log channel in your `.env` file:
 
