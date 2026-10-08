@@ -45,11 +45,23 @@ class MetadataProcessor implements ProcessorInterface
         if ($user !== null) {
             $record = Record::withExtra($record, 'user', [
                 'id' => $user->getAuthIdentifier(),
-                'email' => $user->email ?? null,
+                'email' => $this->email($user),
             ]);
         }
 
         return $record;
+    }
+
+    /**
+     * Read the user's email without letting a failing accessor or a strict model break logging.
+     */
+    protected function email(Authenticatable $user): mixed
+    {
+        try {
+            return data_get($user, 'email');
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     protected function serviceName(): string

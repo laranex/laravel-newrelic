@@ -54,8 +54,24 @@ return [
     */
 
     'transactions' => [
-        'octane' => true,
-        'queue' => true,
+        'octane' => (bool) env('NEW_RELIC_OCTANE_TRANSACTIONS', true),
+        'queue' => (bool) env('NEW_RELIC_QUEUE_TRANSACTIONS', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Logs API Transport
+    |--------------------------------------------------------------------------
+    |
+    | The number of seconds to wait for the Logs API (used for both the
+    | connection and the whole request) and the number of attempts made
+    | before a failed request is given up.
+    |
+    */
+
+    'transport' => [
+        'timeout' => (int) env('NEW_RELIC_LOG_TIMEOUT', 5),
+        'retries' => (int) env('NEW_RELIC_LOG_RETRIES', 3),
     ],
 
 ];
