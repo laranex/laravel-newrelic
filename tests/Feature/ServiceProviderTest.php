@@ -122,12 +122,12 @@ it('does not listen to the transaction events when they are turned off', functio
 
     $provider = new NewRelicServiceProvider($this->app);
     Event::forget('Laravel\Octane\Events\RequestReceived');
-    Event::forget('Illuminate\Queue\Events\JobProcessed');
+    Event::forget('Laravel\Horizon\Events\JobReleased');
 
     $provider->boot();
 
     expect(Event::hasListeners('Laravel\Octane\Events\RequestReceived'))->toBeFalse()
-        ->and(Event::hasListeners('Illuminate\Queue\Events\JobProcessed'))->toBeFalse();
+        ->and(Event::hasListeners('Laravel\Horizon\Events\JobReleased'))->toBeFalse();
 });
 
 it('keeps a newrelic channel the application defines itself', function (): void {

@@ -11,6 +11,7 @@ use Illuminate\Support\ServiceProvider;
 use Laranex\LaravelNewrelic\Contracts\Agent;
 use Laranex\LaravelNewrelic\Contracts\LogTransport;
 use Laranex\LaravelNewrelic\Listeners\EndTransaction;
+use Laranex\LaravelNewrelic\Listeners\FlushLogs;
 use Laranex\LaravelNewrelic\Listeners\RestartBackgroundTransaction;
 use Laranex\LaravelNewrelic\Listeners\StartWebTransaction;
 use Laranex\LaravelNewrelic\Logging\CurlTransport;
@@ -40,6 +41,19 @@ class NewRelicServiceProvider extends ServiceProvider
     ];
 
     /**
+     * The Octane and queue events after which the buffered "newrelic" records are sent.
+     *
+     * @var list<string>
+     */
+    public const FLUSH_EVENTS = [
+        'Laravel\Octane\Events\RequestTerminated',
+        'Laravel\Octane\Events\TaskTerminated',
+        'Laravel\Octane\Events\TickTerminated',
+        'Illuminate\Queue\Events\JobProcessed',
+        'Illuminate\Queue\Events\JobExceptionOccurred',
+    ];
+
+    /**
      * Register any application services.
      */
     public function register(): void
@@ -65,6 +79,7 @@ class NewRelicServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->registerTransactionListeners();
+        $this->registerFlushListener();
 
         if (! $this->app->runningInConsole()) {
             return;
@@ -110,6 +125,14 @@ class NewRelicServiceProvider extends ServiceProvider
                 $events->listen($event, $listener);
             }
         }
+    }
+
+    /**
+     * Send the buffered records after every unit of work, since Octane and queue workers do not exit in between.
+     */
+    protected function registerFlushListener(): void
+    {
+        $this->app->make(Dispatcher::class)->listen(self::FLUSH_EVENTS, FlushLogs::class);
     }
 
     protected function intConfig(Container $app, string $key, int $default): int
