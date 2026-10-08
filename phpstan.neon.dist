@@ -11,3 +11,7 @@ parameters:
     reportUnmatchedIgnoredErrors: false
     ignoreErrors:
         - identifier: typeCoverage.constantTypeCoverage
+        # PHPStan 1.x (Larastan 2, the Laravel 10/11 lanes) cannot match the processors' conditional return type,
+        # which keeps them tolerant of Monolog 2 array records, against Monolog's callable(LogRecord): LogRecord.
+        - message: '#^Parameter \#1 \$callback of method Monolog\\Logger::pushProcessor\(\) expects callable\(Monolog\\LogRecord\): Monolog\\LogRecord#'
+          path: src/Logging/NewRelicLogger.php
