@@ -1,7 +1,7 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
     "name": "laranex/laravel-newrelic",
-    "description": "New Relic for Laravel: a Monolog log channel that ships logs to New Relic Logs, plus one APM transaction per Octane request and queue job",
+    "description": "New Relic for Laravel: ship logs to New Relic Logs and report each Octane request and queue job as a transaction.",
     "keywords": [
         "laravel",
         "laranex",
