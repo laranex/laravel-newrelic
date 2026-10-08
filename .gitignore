@@ -1,1 +1,11 @@
-/.idea
+/vendor
+/build
+/.phpunit.cache
+/.phpunit.result.cache
+/coverage
+composer.lock
+.phpunit.cache
+.phpunit.result.cache
+.DS_Store
+.idea
+.vscode

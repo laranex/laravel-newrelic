@@ -1,74 +1,93 @@
 # Laravel New Relic
 
-Laravel New Relic is a package that provides a custom log channel for New Relic. It also includes listeners to split Octane transactions into individual job and event transactions.
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/laranex/laravel-newrelic.svg?style=flat-square)](https://packagist.org/packages/laranex/laravel-newrelic)
+[![Tests](https://img.shields.io/github/actions/workflow/status/laranex/laravel-newrelic/tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/laranex/laravel-newrelic/actions/workflows/tests.yml)
+[![Total Downloads](https://img.shields.io/packagist/dt/laranex/laravel-newrelic.svg?style=flat-square)](https://packagist.org/packages/laranex/laravel-newrelic)
+[![License](https://img.shields.io/packagist/l/laranex/laravel-newrelic.svg?style=flat-square)](LICENSE.md)
 
-## Why we use Laravel Newrelic Instead of New Relic Monolog Enricher?
+New Relic for Laravel applications: a `newrelic` log channel that ships your logs to New Relic Logs (with logs-in-context linking when the New Relic PHP agent is installed), and listeners that report each Octane request and each queue job as its own APM transaction instead of one endless one. It is a safe no-op when the agent is not installed.
 
-The [New Relic Monolog Enricher](https://github.com/newrelic/newrelic-monolog-logenricher-php) is not compatible with Monolog 3.0, and it has not been updated to address this issue. To overcome this limitation, I created this package to provide a custom log channel specifically designed for New Relic.
+## Documentation
+
+Full documentation lives at **[laranex.vercel.app/laravel-newrelic](https://laranex.vercel.app/laravel-newrelic)**.
+
+## Requirements
+
+- PHP 8.1 or higher
+- Laravel 10, 11, 12 or 13
+- The [New Relic PHP agent](https://docs.newrelic.com/docs/apm/agents/php-agent/getting-started/introduction-new-relic-php/) for APM transactions and logs in context (optional: logs ship without it)
 
 ## Installation
 
-Before installing the Laravel New Relic package, make sure you have the [New Relic PHP agent](https://docs.newrelic.com/docs/agents/php-agent/getting-started/introduction-new-relic-php) installed on your server.
+```bash
+composer require laranex/laravel-newrelic
+```
 
-To install the Laravel New Relic package, follow these steps:
+Optionally publish the configuration file:
 
-1. Install the package via Composer:
+```bash
+php artisan vendor:publish --tag="newrelic-config"
+```
 
-   ```bash
-   composer require laranex/laravel-newrelic
-   ```
-2. Change the log channel in your `.env` file:
+## Usage
 
-   ```env
-   LOG_CHANNEL=newrelic
-   ```
+Point your logs at the `newrelic` channel the package registers, and give it a license key (the agent's `newrelic.license` INI setting is used when none is set):
 
-3. (Optional) Configure your New Relic application name and license key in your `.env` file:
+```env
+LOG_CHANNEL=newrelic
+NEW_RELIC_LICENSE_KEY=your-ingest-license-key
+```
 
-   ```env
-   NEW_RELIC_API_KEY="your_license_key"
-   ```
+Then log as usual:
 
-   These values will be automatically picked up by the package.
+```php
+use Illuminate\Support\Facades\Log;
 
+Log::info('Order placed', ['order_id' => $order->id]);
+```
+
+Every record is posted to the New Relic Logs API as JSON with a millisecond `timestamp`, your `service` (the app name), `hostname`, the client `ip`, the authenticated `user` and, when the agent is loaded, the `trace.id`, `span.id` and `entity.guid` that link it to its APM transaction. Records are buffered and sent as one batch at the end of the request or job.
+
+To tune the channel, define it yourself in `config/logging.php`:
+
+```php
+'newrelic' => [
+    'driver' => 'custom',
+    'via' => Laranex\LaravelNewrelic\Logging\NewRelicLogger::class,
+    'level' => env('LOG_LEVEL', 'debug'),
+    'buffer' => true, // false sends each record immediately
+],
+```
+
+Octane requests and queue jobs are split into separate transactions automatically; turn either off with `newrelic.transactions.octane` / `newrelic.transactions.queue`, and name the APM application with `NEW_RELIC_APP_NAME` when it differs from the agent's `newrelic.appname`.
+
+## Testing
+
+```bash
+composer test
+```
 
 ## Changelog
 
-For detailed information on recent changes, please see the [CHANGELOG](CHANGELOG.md).
+Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
 
 ## Contributing
 
-We welcome contributions! Please see the [CONTRIBUTING](CONTRIBUTING.md) guide for more details.
+Please see [CONTRIBUTING](.github/CONTRIBUTING.md) for details.
 
-## Security
+## Security Vulnerabilities
 
-If you discover any security issues, please report them in accordance with our security policy outlined in the [CONTRIBUTING](CONTRIBUTING.md) guide.
+Please review [our security policy](.github/SECURITY.md) on how to report security vulnerabilities.
 
 ## Credits
 
-- [New Relic Monolog Enricher](https://github.com/newrelic/newrelic-monolog-logenricher-php)
-
-## Contributors
-
 - [Soe Thura](https://github.com/thixpin)
-- [Paing Soe Htike](https://github.com/paisoedev)
 - [Nay Thu Khant](https://github.com/NayThuKhant)
-
-## Versions
-
-| Version       | Release Date |
-|---------------|--------------|
-| [1.0.0](#100) | 2024-08-31   |
-
-### 1.0.0
-
-- Initial release
+- [All Contributors](../../contributors)
+- The formatter, handler and processor derive from the [New Relic Monolog Enricher](https://github.com/newrelic/newrelic-monolog-logenricher-php)
 
 ## License
 
-This project is primarily licensed under the Apache License, Version 2.0. For more details, please refer to the [License File](LICENSE.md).
+The Apache License 2.0. Please see [License File](LICENSE.md) for more information.
 
-Please note that this package includes components based on the New Relic Monolog Enricher, which are subject to the New Relic License. All original code contributed to this package, excluding the New Relic Monolog Enricher components, is also made available under the [MIT License](MIT-LICENSE.md).
-
-Users are free to use, modify, and distribute the original code under either the Apache License 2.0 or the MIT License, depending on their preference, with the exception of the New Relic Monolog Enricher components, which must be used in accordance with the New Relic License.
-
+The components derived from the New Relic Monolog Enricher (`NewRelicFormatter`, `NewRelicHandler`, `NewRelicProcessor`) carry New Relic's original copyright notice (Copyright 2019 New Relic Corporation, Apache-2.0).
