@@ -9,7 +9,7 @@ Versions 2 and 3 were skipped so that every Laranex package shares the v4 major.
 ### Changed
 - Requires PHP 8.1+ and supports Laravel 10 through 13.
 - Rebuilt on the official Laravel package skeleton (Pest, PHPStan, Pint, Testbench workbench, GitHub Actions matrix).
-- Requires Monolog 3 (shipped by Laravel 10+); the handler, formatter and processors still accept Monolog 2 style array records as well as `LogRecord` objects.
+- Requires Monolog 3.1+ (Laravel 10+ ships Monolog 3); the handler, formatter and processors still accept Monolog 2 style array records as well as `LogRecord` objects.
 - Every `newrelic_*` call goes through the `Laranex\LaravelNewrelic\Contracts\Agent` singleton (`NewRelicAgent`), which is a no-op when the New Relic extension is not loaded, so the package is safe to install without the agent and the agent can be faked in tests.
 - Log payloads are posted through the `Laranex\LaravelNewrelic\Contracts\LogTransport` singleton (`CurlTransport`, with timeouts and retries) and can be swapped in tests.
 - The Logs API host is derived from the license key region (`log-api.eu.newrelic.com` for EU keys) or set with `NEW_RELIC_LOG_HOST`; batches are posted as one JSON array.
