@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use Illuminate\Auth\GenericUser;
 use Illuminate\Config\Repository;
 use Illuminate\Container\Container;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
+use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Http\Request;
 use Laranex\LaravelNewrelic\Logging\MetadataProcessor;
@@ -68,6 +70,37 @@ it('skips the user when the guard cannot be resolved', function (): void {
     $container->bind(AuthFactory::class, fn () => throw new RuntimeException('no auth'));
 
     expect(extra((new MetadataProcessor($container))(record())))->not->toHaveKey('user');
+});
+
+it('adds the user without an email when reading the email attribute throws', function (): void {
+    $user = new class(['id' => 7]) extends GenericUser
+    {
+        public function __get($key)
+        {
+            if ($key === 'email') {
+                throw new LogicException('The attribute [email] either does not exist or was not retrieved.');
+            }
+
+            return parent::__get($key);
+        }
+
+        public function __isset($key)
+        {
+            return true;
+        }
+    };
+
+    $guard = Mockery::mock(Guard::class);
+    $guard->shouldReceive('user')->andReturn($user);
+    $auth = Mockery::mock(AuthFactory::class);
+    $auth->shouldReceive('guard')->andReturn($guard);
+
+    $container = new Container;
+    $container->instance(ConfigRepository::class, new Repository(['app' => ['name' => 'Shop']]));
+    $container->instance('request', Request::create('/orders'));
+    $container->instance(AuthFactory::class, $auth);
+
+    expect(extra((new MetadataProcessor($container))(record()))['user'])->toBe(['id' => 7, 'email' => null]);
 });
 
 it('reads and writes records of the installed Monolog version', function (): void {

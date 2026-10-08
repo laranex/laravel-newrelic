@@ -6,7 +6,6 @@ namespace Laranex\LaravelNewrelic\Logging;
 
 use Laranex\LaravelNewrelic\Contracts\LogTransport;
 use Monolog\Handler\Curl\Util;
-use Monolog\Handler\MissingExtensionException;
 
 /**
  * Posts payloads to the Logs API with cURL, retrying transient failures like Monolog's own cURL handlers do.
@@ -17,12 +16,7 @@ class CurlTransport implements LogTransport
      * @param  int  $timeout  Seconds to wait for the whole request
      * @param  int  $retries  Attempts before giving up on a failed request
      */
-    public function __construct(protected int $timeout = 5, protected int $retries = 3)
-    {
-        if (! extension_loaded('curl')) {
-            throw new MissingExtensionException('The curl extension is required to ship logs to New Relic.');
-        }
-    }
+    public function __construct(protected int $timeout = 5, protected int $retries = 3) {}
 
     public function send(string $url, array $headers, string $body): void
     {

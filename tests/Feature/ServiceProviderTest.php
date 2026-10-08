@@ -17,7 +17,49 @@ it('merges the package config with its defaults', function (): void {
     expect(config('newrelic.license_key'))->toBe('us-license-key')
         ->and(config('newrelic.host'))->toBeNull()
         ->and(config('newrelic.app_name'))->toBeNull()
-        ->and(config('newrelic.transactions'))->toBe(['octane' => true, 'queue' => true]);
+        ->and(config('newrelic.transactions'))->toBe(['octane' => true, 'queue' => true])
+        ->and(config('newrelic.transport'))->toBe(['timeout' => 5, 'retries' => 3]);
+});
+
+it('reads the transaction and transport settings from the environment', function (): void {
+    $env = [
+        'NEW_RELIC_OCTANE_TRANSACTIONS' => 'false',
+        'NEW_RELIC_QUEUE_TRANSACTIONS' => 'false',
+        'NEW_RELIC_LOG_TIMEOUT' => '10',
+        'NEW_RELIC_LOG_RETRIES' => '1',
+    ];
+
+    foreach ($env as $key => $value) {
+        putenv($key.'='.$value);
+    }
+
+    try {
+        $this->refreshApplication();
+
+        expect(config('newrelic.transactions'))->toBe(['octane' => false, 'queue' => false])
+            ->and(config('newrelic.transport'))->toBe(['timeout' => 10, 'retries' => 1]);
+    } finally {
+        foreach (array_keys($env) as $key) {
+            putenv($key);
+        }
+    }
+});
+
+it('builds the transport from the configured timeout and retries', function (): void {
+    config()->set('newrelic.transport', ['timeout' => 12, 'retries' => 2]);
+    $this->app->forgetInstance(LogTransport::class);
+
+    $transport = app(LogTransport::class);
+
+    expect($transport)->toBeInstanceOf(CurlTransport::class)
+        ->and((fn (): array => [$this->timeout, $this->retries])->call($transport))->toBe([12, 2]);
+});
+
+it('falls back to the default transport settings when the config is not numeric', function (): void {
+    config()->set('newrelic.transport', ['timeout' => 'soon', 'retries' => null]);
+    $this->app->forgetInstance(LogTransport::class);
+
+    expect((fn (): array => [$this->timeout, $this->retries])->call(app(LogTransport::class)))->toBe([5, 3]);
 });
 
 it('binds the agent and the transport as singletons', function (): void {

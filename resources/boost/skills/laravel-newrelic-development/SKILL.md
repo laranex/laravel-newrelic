@@ -21,7 +21,7 @@ Use this skill when a Laravel application sends its logs to New Relic or runs un
 
 - set `NEW_RELIC_LICENSE_KEY` (an ingest license key); when unset, the agent's `newrelic.license` INI value is used
 - set `LOG_CHANNEL=newrelic`, or add `newrelic` to a `stack` channel
-- optional: `NEW_RELIC_LOG_HOST` (defaults to the region of the license key), `NEW_RELIC_APP_NAME` (defaults to the agent's `newrelic.appname`)
+- optional: `NEW_RELIC_LOG_HOST` (defaults to the region of the license key), `NEW_RELIC_APP_NAME` (defaults to the agent's `newrelic.appname`), `NEW_RELIC_LOG_TIMEOUT` (seconds, default `5`), `NEW_RELIC_LOG_RETRIES` (attempts, default `3`)
 - publish the config only when the defaults must change: `php artisan vendor:publish --tag="newrelic-config"`
 
 ### 2. Tune the channel
@@ -33,7 +33,7 @@ Use this skill when a Laravel application sends its logs to New Relic or runs un
 ### 3. Transactions
 
 - Octane requests become web transactions and queue jobs become background transactions without extra code
-- turn either off with `newrelic.transactions.octane` / `newrelic.transactions.queue` in `config/newrelic.php`
+- turn either off with `NEW_RELIC_OCTANE_TRANSACTIONS=false` / `NEW_RELIC_QUEUE_TRANSACTIONS=false` (config keys `newrelic.transactions.octane` / `newrelic.transactions.queue`)
 
 ### 4. Test without the agent
 

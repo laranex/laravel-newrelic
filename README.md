@@ -59,7 +59,7 @@ To tune the channel, define it yourself in `config/logging.php`:
 ],
 ```
 
-Octane requests and queue jobs are split into separate transactions automatically; turn either off with `newrelic.transactions.octane` / `newrelic.transactions.queue`, and name the APM application with `NEW_RELIC_APP_NAME` when it differs from the agent's `newrelic.appname`.
+Octane requests and queue jobs are split into separate transactions automatically; turn either off with `NEW_RELIC_OCTANE_TRANSACTIONS=false` / `NEW_RELIC_QUEUE_TRANSACTIONS=false`, and name the APM application with `NEW_RELIC_APP_NAME` when it differs from the agent's `newrelic.appname`. The Logs API request uses a 5 second timeout and 3 attempts; tune them with `NEW_RELIC_LOG_TIMEOUT` and `NEW_RELIC_LOG_RETRIES`.
 
 ## Testing
 

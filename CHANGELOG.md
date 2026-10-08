@@ -11,13 +11,13 @@ Versions 2 and 3 were skipped so that every Laranex package shares the v4 major.
 - Rebuilt on the official Laravel package skeleton (Pest, PHPStan, Pint, Testbench workbench, GitHub Actions matrix).
 - Requires Monolog 3.1+ (Laravel 10+ ships Monolog 3); the handler, formatter and processors still accept Monolog 2 style array records as well as `LogRecord` objects.
 - Every `newrelic_*` call goes through the `Laranex\LaravelNewrelic\Contracts\Agent` singleton (`NewRelicAgent`), which is a no-op when the New Relic extension is not loaded, so the package is safe to install without the agent and the agent can be faked in tests.
-- Log payloads are posted through the `Laranex\LaravelNewrelic\Contracts\LogTransport` singleton (`CurlTransport`, with timeouts and retries) and can be swapped in tests.
+- Log payloads are posted through the `Laranex\LaravelNewrelic\Contracts\LogTransport` singleton (`CurlTransport`, with a configurable timeout and retries) and can be swapped in tests.
 - The Logs API host is derived from the license key region (`log-api.eu.newrelic.com` for EU keys) or set with `NEW_RELIC_LOG_HOST`; batches are posted as one JSON array.
-- The service name, hostname, client IP and authenticated user are added per record, so they are correct on Octane.
+- The service name, hostname, client IP and authenticated user are added per record, so they are correct on Octane. A user whose `email` cannot be read (e.g. a model with `preventAccessingMissingAttributes()`) is logged with `email: null` instead of breaking the log call.
 - The agent's linking metadata `hostname` wins over the PHP hostname so logs link to the right host entity.
 
 ### Added
-- `newrelic.host`, `newrelic.app_name` and `newrelic.transactions.{octane,queue}` configuration, plus a `buffer` option on the log channel.
+- `newrelic.host`, `newrelic.app_name`, `newrelic.transactions.{octane,queue}` (`NEW_RELIC_OCTANE_TRANSACTIONS` / `NEW_RELIC_QUEUE_TRANSACTIONS`) and `newrelic.transport.{timeout,retries}` (`NEW_RELIC_LOG_TIMEOUT` / `NEW_RELIC_LOG_RETRIES`, default 5 seconds and 3 attempts) configuration, plus a `buffer` option on the log channel.
 - Publish tags `newrelic` and `newrelic-config`.
 - A full Pest test suite: handler and formatter, processors, agent, log channel, listeners and service provider.
 
@@ -33,6 +33,6 @@ Versions 2 and 3 were skipped so that every Laranex package shares the v4 major.
 - The listeners were renamed to `Listeners\StartWebTransaction`, `Listeners\EndTransaction` and `Listeners\RestartBackgroundTransaction`; they depend on the `Contracts\Agent` and no longer call `newrelic_*` directly.
 - A missing license key now throws when the channel is built (Laravel falls back to its emergency logger) instead of posting with `NO_LICENSE_KEY_FOUND`.
 
-### 1.0.0
+## 1.0.0 - 2024-08-30
 
 - Initial release

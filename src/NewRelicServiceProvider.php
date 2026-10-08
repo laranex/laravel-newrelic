@@ -47,7 +47,10 @@ class NewRelicServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/newrelic.php', 'newrelic');
 
         $this->app->singleton(Agent::class, NewRelicAgent::class);
-        $this->app->singleton(LogTransport::class, CurlTransport::class);
+        $this->app->singleton(LogTransport::class, fn (Container $app): CurlTransport => new CurlTransport(
+            $this->intConfig($app, 'newrelic.transport.timeout', 5),
+            $this->intConfig($app, 'newrelic.transport.retries', 3),
+        ));
 
         $this->app->singleton(StartWebTransaction::class, fn (Container $app): StartWebTransaction => new StartWebTransaction($app->make(Agent::class), $this->appName($app)));
         $this->app->singleton(EndTransaction::class);
@@ -107,6 +110,13 @@ class NewRelicServiceProvider extends ServiceProvider
                 $events->listen($event, $listener);
             }
         }
+    }
+
+    protected function intConfig(Container $app, string $key, int $default): int
+    {
+        $value = $app->make(ConfigRepository::class)->get($key, $default);
+
+        return is_numeric($value) ? (int) $value : $default;
     }
 
     protected function appName(Container $app): ?string
