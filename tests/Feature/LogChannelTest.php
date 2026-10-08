@@ -57,7 +57,7 @@ it('adds the authenticated user to every record', function (): void {
     expect($this->transport->logs()[0]['user'])->toBe(['id' => 7, 'email' => 'jane@example.com']);
 });
 
-it('honours the channel level and sends immediately without the buffer', function (): void {
+it('honors the channel level and sends immediately without the buffer', function (): void {
     config()->set('logging.channels.newrelic', ['driver' => 'custom', 'via' => NewRelicLogger::class, 'level' => 'warning', 'buffer' => false]);
 
     Log::channel('newrelic')->info('ignored');
