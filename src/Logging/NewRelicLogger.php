@@ -9,7 +9,6 @@ use Illuminate\Contracts\Container\Container;
 use InvalidArgumentException;
 use Laranex\LaravelNewrelic\Contracts\Agent;
 use Laranex\LaravelNewrelic\Contracts\LogTransport;
-use Monolog\Handler\BufferHandler;
 use Monolog\Logger;
 
 /**
@@ -45,7 +44,7 @@ class NewRelicLogger
         );
 
         $logger = new Logger(is_string($name) ? $name : 'newrelic');
-        $logger->pushHandler(($config['buffer'] ?? true) ? new BufferHandler($handler, 0, $level, $bubble) : $handler);
+        $logger->pushHandler(($config['buffer'] ?? true) ? new NewRelicBufferHandler($handler, 0, $level, $bubble) : $handler);
         $logger->pushProcessor(new NewRelicProcessor($this->agent));
         $logger->pushProcessor(new MetadataProcessor($this->container));
 
