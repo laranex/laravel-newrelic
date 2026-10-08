@@ -49,7 +49,7 @@ it('sends the buffered records of a stack channel after each Octane request', fu
 
 it('listens to the Octane and queue events that end a unit of work', function (): void {
     foreach (NewRelicServiceProvider::FLUSH_EVENTS as $event) {
-        expect(Event::hasListeners($event))->toBeTrue("No listener for {$event}");
+        expect(Event::getRawListeners())->toHaveKey($event);
     }
 });
 

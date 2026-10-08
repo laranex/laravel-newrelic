@@ -81,7 +81,7 @@ it('registers a ready to use newrelic log channel', function (): void {
 
 it('listens to the Octane and queue events by default', function (): void {
     foreach (NewRelicServiceProvider::OCTANE_EVENTS + NewRelicServiceProvider::QUEUE_EVENTS as $event => $listener) {
-        expect(Event::hasListeners($event))->toBeTrue("No listener for {$event}");
+        expect(Event::getRawListeners())->toHaveKey($event);
     }
 });
 
@@ -126,8 +126,9 @@ it('does not listen to the transaction events when they are turned off', functio
 
     $provider->boot();
 
-    expect(Event::hasListeners('Laravel\Octane\Events\RequestReceived'))->toBeFalse()
-        ->and(Event::hasListeners('Laravel\Horizon\Events\JobReleased'))->toBeFalse();
+    // Inspect the registered listeners directly: hasListeners() is also true when any wildcard listener exists.
+    expect(Event::getRawListeners())->not->toHaveKey('Laravel\Octane\Events\RequestReceived')
+        ->not->toHaveKey('Laravel\Horizon\Events\JobReleased');
 });
 
 it('keeps a newrelic channel the application defines itself', function (): void {
