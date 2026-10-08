@@ -1,6 +1,6 @@
 ---
 name: package-generate-skill
-description: "Use this skill when creating or updating the bundled Laravel Boost skill under resources/boost/skills from the package implementation and package documentation. Trigger after public APIs, commands, config, routes, views, publish tags, README content, or examples change."
+description: "Use this skill when creating or updating the bundled Laravel Boost skill at resources/boost/skills/laravel-newrelic/SKILL.md (copied to skills/laravel-newrelic/SKILL.md) from the package implementation and package documentation. Trigger after public APIs, commands, config, routes, views, publish tags, README content, or examples change."
 license: MIT
 metadata:
   author: laravel
@@ -17,8 +17,8 @@ Keep the package's bundled Boost skill accurate, concise, and focused on helping
 1. Inspect the package implementation before editing the Boost skill: service provider, facades, public classes, commands, config, routes, migrations, events, views, publish tags, and tests.
 2. Inspect package documentation: `README.md`, contributing docs, examples, and changelog entries that describe user-facing behavior.
 3. Identify the public integration surface only. Include install, configure, publish, command, route, facade, helper, middleware, event, and testing guidance only when the package actually exposes it.
-4. Update `resources/boost/skills/*/SKILL.md` with practical adoption steps, references, examples, and anti-patterns for Laravel app developers using the package.
-5. Preserve front matter, package metadata, and the Boost skill structure: description, primary goal, workflow, references, examples, and anti-patterns.
+4. Update `resources/boost/skills/laravel-newrelic/SKILL.md` (front matter `name: laravel-newrelic`) with how to use the package in an application, then copy it unchanged to `skills/laravel-newrelic/SKILL.md`; `tests/Unit/AgentSkillTest.php` checks both copies are identical.
+5. Preserve the front matter and the usage-only structure: When to use, Install, Configure, Use (one subsection per feature), Test your app, Avoid. No sections about maintaining, releasing or regenerating the package or the skill.
 6. Validate that the Boost skill does not describe internals as public API and does not document features that are not implemented.
 
 ## Writing Rules
@@ -31,7 +31,7 @@ Keep the package's bundled Boost skill accurate, concise, and focused on helping
 
 ## References
 
-- `resources/boost/skills/`
+- `resources/boost/skills/laravel-newrelic/SKILL.md` and `skills/laravel-newrelic/SKILL.md`
 - `src/*ServiceProvider.php`
 - `src/Facades/`
 - `src/Console/Commands/`
