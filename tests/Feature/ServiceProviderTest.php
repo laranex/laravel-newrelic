@@ -116,20 +116,31 @@ it('publishes the config file under the newrelic tags', function (): void {
     }
 });
 
-it('does not listen to the transaction events when they are turned off', function (): void {
-    config()->set('newrelic.transactions.octane', false);
-    config()->set('newrelic.transactions.queue', false);
+it('does not listen to the transaction events when they are turned off', function (string $switch, array $events): void {
+    config()->set('newrelic.transactions.'.$switch, false);
 
-    $provider = new NewRelicServiceProvider($this->app);
-    Event::forget('Laravel\Octane\Events\RequestReceived');
-    Event::forget('Laravel\Horizon\Events\JobReleased');
+    foreach (array_keys(NewRelicServiceProvider::OCTANE_EVENTS + NewRelicServiceProvider::QUEUE_EVENTS) as $event) {
+        Event::forget($event);
+    }
 
-    $provider->boot();
+    (new NewRelicServiceProvider($this->app))->boot();
 
     // Inspect the registered listeners directly: hasListeners() is also true when any wildcard listener exists.
-    expect(Event::getRawListeners())->not->toHaveKey('Laravel\Octane\Events\RequestReceived')
-        ->not->toHaveKey('Laravel\Horizon\Events\JobReleased');
-});
+    $listeners = Event::getRawListeners();
+
+    foreach ($events as $event => $listener) {
+        expect($listeners[$event] ?? [])->not->toContain($listener);
+    }
+
+    $other = $switch === 'octane' ? NewRelicServiceProvider::QUEUE_EVENTS : NewRelicServiceProvider::OCTANE_EVENTS;
+
+    foreach ($other as $event => $listener) {
+        expect($listeners[$event] ?? [])->toContain($listener);
+    }
+})->with([
+    'octane' => ['octane', NewRelicServiceProvider::OCTANE_EVENTS],
+    'queue' => ['queue', NewRelicServiceProvider::QUEUE_EVENTS],
+]);
 
 it('keeps a newrelic channel the application defines itself', function (): void {
     config()->set('logging.channels.newrelic', ['driver' => 'custom', 'via' => NewRelicLogger::class, 'level' => 'error', 'buffer' => false]);

@@ -2,11 +2,25 @@
 
 declare(strict_types=1);
 
+use Illuminate\Queue\Events\JobExceptionOccurred;
+use Illuminate\Queue\Events\JobProcessed;
+use Illuminate\Queue\Jobs\SyncJob;
 use Illuminate\Support\Facades\Event;
 use Laranex\LaravelNewrelic\Listeners\EndTransaction;
 use Laranex\LaravelNewrelic\Listeners\RestartBackgroundTransaction;
 use Laranex\LaravelNewrelic\Listeners\StartWebTransaction;
 use Laranex\LaravelNewrelic\Tests\Fakes\FakeAgent;
+
+function transactionJob(): SyncJob
+{
+    return new SyncJob(app(), '{"job":"Workbench\\\\Job","data":[]}', 'sync', 'default');
+}
+
+it('starts no extra transaction when a Horizon job is released', function (): void {
+    Event::dispatch('Laravel\Horizon\Events\JobReleased', [new stdClass]);
+
+    expect($this->agent->calls)->toBeEmpty();
+});
 
 it('starts a web transaction when Octane receives a request', function (): void {
     Event::dispatch('Laravel\Octane\Events\RequestReceived', [new stdClass, new stdClass, new stdClass]);
@@ -27,9 +41,9 @@ it('ends the transaction when an Octane request terminates or a worker starts', 
     ]);
 });
 
-it('restarts a background transaction after each processed or released queue job', function (): void {
-    Event::dispatch('Illuminate\Queue\Events\JobProcessed', [new stdClass]);
-    Event::dispatch('Laravel\Horizon\Events\JobReleased', [new stdClass]);
+it('restarts a background transaction after each processed or failed queue job', function (): void {
+    Event::dispatch(new JobProcessed('sync', transactionJob()));
+    Event::dispatch(new JobExceptionOccurred('sync', transactionJob(), new RuntimeException('boom')));
 
     expect($this->agent->calls)->toBe([
         ['endTransaction', false],

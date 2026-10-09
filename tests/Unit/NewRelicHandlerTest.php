@@ -110,3 +110,16 @@ it('flushes one batch when wrapped in a buffer handler', function (): void {
     expect($this->transport->requests)->toHaveCount(1)
         ->and(array_column($this->transport->logs(), 'message'))->toBe(['first', 'second']);
 });
+
+it('splits a batch into requests that stay under the Logs API payload limit', function (): void {
+    $handler = new NewRelicHandler($this->transport, 'us-license-key');
+    $message = str_repeat('x', 400_000);
+
+    $handler->handleBatch([record($message.'1'), record($message.'2'), record($message.'3')]);
+
+    expect($this->transport->requests)->toHaveCount(2)
+        ->and(strlen($this->transport->requests[0]['body']))->toBeLessThanOrEqual(NewRelicHandler::MAX_PAYLOAD_BYTES)
+        ->and(strlen($this->transport->requests[1]['body']))->toBeLessThanOrEqual(NewRelicHandler::MAX_PAYLOAD_BYTES)
+        ->and(array_column($this->transport->logs(0), 'message'))->toBe([$message.'1', $message.'2'])
+        ->and(array_column($this->transport->logs(1), 'message'))->toBe([$message.'3']);
+});

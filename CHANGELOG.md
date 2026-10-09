@@ -16,6 +16,9 @@ Versions 2 and 3 were skipped so that every Laranex package shares the v4 major.
 - The service name, hostname, client IP and authenticated user are added per record, so they are correct on Octane. A user whose `email` cannot be read (e.g. a model with `preventAccessingMissingAttributes()`) is logged with `email: null` instead of breaking the log call.
 - The agent's linking metadata `hostname` wins over the PHP hostname so logs link to the right host entity.
 - Buffered records are sent after every Octane request, task and tick and after every queue job (processed or failed), instead of only when the worker process exits.
+- A fresh background transaction starts after every queue job, processed or failed (`JobProcessed` and `JobExceptionOccurred`), instead of after processed jobs and Horizon releases only, so a failed job no longer shares its transaction with the next job.
+- Delivery failures (an unreachable Logs API after the last attempt, or an HTTP error status) are written to PHP's error log instead of throwing from the log call, so New Relic downtime cannot fail a request or mark a successful queue job as failed. At least one attempt is always made.
+- Batches bigger than the Logs API's 1 MB payload limit are split into several requests.
 
 ### Added
 - `newrelic.host`, `newrelic.app_name`, `newrelic.transactions.{octane,queue}` (`NEW_RELIC_OCTANE_TRANSACTIONS` / `NEW_RELIC_QUEUE_TRANSACTIONS`) and `newrelic.transport.{timeout,retries}` (`NEW_RELIC_LOG_TIMEOUT` / `NEW_RELIC_LOG_RETRIES`, default 5 seconds and 3 attempts) configuration, plus a `buffer` option on the log channel.
