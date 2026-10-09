@@ -20,7 +20,7 @@ arch('the package source declares strict types')
     ->toUseStrictTypes();
 
 arch('every newrelic_* call goes through the agent')
-    ->expect(['newrelic_start_transaction', 'newrelic_end_transaction', 'newrelic_background_job', 'newrelic_get_linking_metadata'])
+    ->expect(['newrelic_start_transaction', 'newrelic_end_transaction', 'newrelic_name_transaction', 'newrelic_background_job', 'newrelic_get_linking_metadata'])
     ->not->toBeUsedIn('Laranex\LaravelNewrelic\Listeners')
     ->not->toBeUsedIn('Laranex\LaravelNewrelic\Logging');
 

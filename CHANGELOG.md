@@ -19,11 +19,14 @@ Versions 2 and 3 were skipped so that every Laranex package shares the v4 major.
 - A fresh background transaction starts after every queue job, processed or failed (`JobProcessed` and `JobExceptionOccurred`), instead of after processed jobs and Horizon releases only, so a failed job no longer shares its transaction with the next job.
 - Delivery failures (an unreachable Logs API after the last attempt, or an HTTP error status) are written to PHP's error log instead of throwing from the log call, so New Relic downtime cannot fail a request or mark a successful queue job as failed. At least one attempt is always made.
 - Batches bigger than the Logs API's 1 MB payload limit are split into several requests.
-- `illuminate/log` and `illuminate/queue` are required explicitly (the log channel and queue event listeners use them directly), and the service provider uses the application's `configPath()` instead of the `config_path()` helper, which only `laravel/framework` defines.
+- `NewRelicServiceProvider::OCTANE_EVENTS` maps each Octane event to a list of listeners, in the order they run.
+- `illuminate/log`, `illuminate/queue` and `illuminate/routing` are required explicitly (the log channel, the queue event listeners and the Octane transaction naming use them directly), and the service provider uses the application's `configPath()` instead of the `config_path()` helper, which only `laravel/framework` defines.
 
 ### Added
 - `newrelic.host`, `newrelic.app_name`, `newrelic.transactions.{octane,queue}` (`NEW_RELIC_OCTANE_TRANSACTIONS` / `NEW_RELIC_QUEUE_TRANSACTIONS`) and `newrelic.transport.{timeout,retries}` (`NEW_RELIC_LOG_TIMEOUT` / `NEW_RELIC_LOG_RETRIES`, default 5 seconds and 3 attempts) configuration, plus a `buffer` option on the log channel.
 - Publish tags `newrelic` and `newrelic-config`.
+- Octane web transactions are named after the request's route when it terminates (`Listeners\NameWebTransaction`, before `EndTransaction` on `RequestTerminated`): the route name (skipping `generated::` names), then the controller action, then the HTTP method and route URI pattern (`GET /blogs/{blog}`), and `unknown` when no route matched, never the raw URL. Under Octane the agent's own route naming often never runs, so transactions were named after the worker script. Only Octane requests are named, and only while `transactions.octane` is on.
+- `Agent::nameTransaction(string $name)`, a guarded `newrelic_name_transaction()` call.
 - A full Pest test suite: handler and formatter, processors, agent, log channel, listeners and service provider.
 
 ### Removed

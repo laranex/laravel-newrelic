@@ -31,11 +31,12 @@ it('starts a web transaction when Octane receives a request', function (): void 
     ]);
 });
 
-it('ends the transaction when an Octane request terminates or a worker starts', function (): void {
+it('names and ends the transaction when an Octane request terminates, and ends it when a worker starts', function (): void {
     Event::dispatch('Laravel\Octane\Events\RequestTerminated', [new stdClass]);
     Event::dispatch('Laravel\Octane\Events\WorkerStarting', [new stdClass]);
 
     expect($this->agent->calls)->toBe([
+        ['nameTransaction', 'unknown'],
         ['endTransaction', false],
         ['endTransaction', false],
     ]);

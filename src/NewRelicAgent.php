@@ -50,6 +50,15 @@ class NewRelicAgent implements Agent
         return (bool) newrelic_end_transaction($ignore);
     }
 
+    public function nameTransaction(string $name): bool
+    {
+        if (! $this->isLoaded() || ! function_exists('newrelic_name_transaction')) {
+            return false;
+        }
+
+        return (bool) newrelic_name_transaction($name);
+    }
+
     public function backgroundJob(bool $flag = true): void
     {
         if (! $this->isLoaded() || ! function_exists('newrelic_background_job')) {

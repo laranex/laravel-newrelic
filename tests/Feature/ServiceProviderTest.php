@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Event;
 use Laranex\LaravelNewrelic\Contracts\Agent;
 use Laranex\LaravelNewrelic\Contracts\LogTransport;
 use Laranex\LaravelNewrelic\Listeners\EndTransaction;
+use Laranex\LaravelNewrelic\Listeners\NameWebTransaction;
 use Laranex\LaravelNewrelic\Listeners\RestartBackgroundTransaction;
 use Laranex\LaravelNewrelic\Listeners\StartWebTransaction;
 use Laranex\LaravelNewrelic\Logging\CurlTransport;
@@ -85,6 +86,13 @@ it('listens to the Octane and queue events by default', function (): void {
     }
 });
 
+it('names a terminated Octane request before ending its transaction', function (): void {
+    $listeners = Event::getRawListeners()['Laravel\Octane\Events\RequestTerminated'];
+
+    expect(array_search(NameWebTransaction::class, $listeners, true))
+        ->toBeLessThan(array_search(EndTransaction::class, $listeners, true));
+});
+
 it('resolves the listeners as singletons with the configured app name', function (): void {
     config()->set('newrelic.app_name', 'Shop API');
     $this->app->forgetInstance(StartWebTransaction::class);
@@ -95,6 +103,7 @@ it('resolves the listeners as singletons with the configured app name', function
 
     expect(app(StartWebTransaction::class))->toBe(app(StartWebTransaction::class))
         ->and(app(EndTransaction::class))->toBe(app(EndTransaction::class))
+        ->and(app(NameWebTransaction::class))->toBe(app(NameWebTransaction::class))
         ->and($this->agent->calls)->toBe([
             ['startTransaction', 'Shop API'],
             ['backgroundJob', false],
@@ -128,14 +137,18 @@ it('does not listen to the transaction events when they are turned off', functio
     // Inspect the registered listeners directly: hasListeners() is also true when any wildcard listener exists.
     $listeners = Event::getRawListeners();
 
-    foreach ($events as $event => $listener) {
-        expect($listeners[$event] ?? [])->not->toContain($listener);
+    foreach ($events as $event => $classes) {
+        foreach ((array) $classes as $listener) {
+            expect($listeners[$event] ?? [])->not->toContain($listener);
+        }
     }
 
     $other = $switch === 'octane' ? NewRelicServiceProvider::QUEUE_EVENTS : NewRelicServiceProvider::OCTANE_EVENTS;
 
-    foreach ($other as $event => $listener) {
-        expect($listeners[$event] ?? [])->toContain($listener);
+    foreach ($other as $event => $classes) {
+        foreach ((array) $classes as $listener) {
+            expect($listeners[$event] ?? [])->toContain($listener);
+        }
     }
 })->with([
     'octane' => ['octane', NewRelicServiceProvider::OCTANE_EVENTS],
