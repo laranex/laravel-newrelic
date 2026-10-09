@@ -79,6 +79,10 @@ With `'buffer' => true` the records are sent as one batch at the end of the requ
 
 Nothing to call: with the agent loaded, each Octane request becomes a web transaction and each queue job (processed or failed) is followed by a fresh background transaction, reported to `newrelic.app_name`. Turn either off with `NEW_RELIC_OCTANE_TRANSACTIONS=false` / `NEW_RELIC_QUEUE_TRANSACTIONS=false`.
 
+Octane web transactions are named after the matched route when the request terminates: the route name, else the controller action (`App\Http\Controllers\BlogController@show`), else the method and URI pattern (`GET /blogs/{blog}`); requests without a route are named `unknown`. Give routes names for readable transaction names. PHP-FPM requests keep the agent's own naming.
+
+New Relic's PHP agent officially supports only Apache mod_php and PHP-FPM: Octane servers are not supported yet (ZTS builds such as FrankenPHP are unsupported, Swoole is on New Relic's roadmap), so verify Octane transactions in New Relic before relying on them.
+
 ### Call the agent
 
 Resolve `Laranex\LaravelNewrelic\Contracts\Agent` instead of calling `newrelic_*` functions; every method is a no-op without the extension:
@@ -95,7 +99,7 @@ if ($agent->isLoaded()) {
 }
 ```
 
-Available methods: `isLoaded()`, `appName()`, `licenseKey()`, `startTransaction(?string $appName = null)`, `endTransaction(bool $ignore = false)`, `backgroundJob(bool $flag = true)`, `linkingMetadata()`.
+Available methods: `isLoaded()`, `appName()`, `licenseKey()`, `startTransaction(?string $appName = null)`, `endTransaction(bool $ignore = false)`, `nameTransaction(string $name)`, `backgroundJob(bool $flag = true)`, `linkingMetadata()`.
 
 ## Test your app
 
@@ -134,4 +138,5 @@ Fake `Laranex\LaravelNewrelic\Contracts\Agent` the same way to assert transactio
 - Calling `newrelic_*` functions directly; use the `Agent` contract so code runs where the agent is absent.
 - Giving `NewRelicHandler` another formatter; it only accepts `NewRelicFormatter`.
 - Putting secrets or personal data in the log context; every record is sent to New Relic.
+- Naming Octane transactions after the request URL (`$request->path()`); IDs in URLs create unbounded transaction names. The package already names them after the route.
 - Flushing the buffer by hand in Octane or queue code; the package already does it after each request and job.

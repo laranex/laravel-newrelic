@@ -52,6 +52,13 @@ final class FakeAgent implements Agent
         return $this->loaded;
     }
 
+    public function nameTransaction(string $name): bool
+    {
+        $this->calls[] = ['nameTransaction', $name];
+
+        return $this->loaded;
+    }
+
     public function backgroundJob(bool $flag = true): void
     {
         $this->calls[] = ['backgroundJob', $flag];

@@ -12,6 +12,7 @@ use Laranex\LaravelNewrelic\Contracts\Agent;
 use Laranex\LaravelNewrelic\Contracts\LogTransport;
 use Laranex\LaravelNewrelic\Listeners\EndTransaction;
 use Laranex\LaravelNewrelic\Listeners\FlushLogs;
+use Laranex\LaravelNewrelic\Listeners\NameWebTransaction;
 use Laranex\LaravelNewrelic\Listeners\RestartBackgroundTransaction;
 use Laranex\LaravelNewrelic\Listeners\StartWebTransaction;
 use Laranex\LaravelNewrelic\Logging\CurlTransport;
@@ -20,14 +21,14 @@ use Laranex\LaravelNewrelic\Logging\NewRelicLogger;
 class NewRelicServiceProvider extends ServiceProvider
 {
     /**
-     * The Octane events that open and close a web transaction.
+     * The Octane events that open, name and close a web transaction, with their listeners in the order they run.
      *
-     * @var array<string, class-string>
+     * @var array<string, list<class-string>>
      */
     public const OCTANE_EVENTS = [
-        'Laravel\Octane\Events\WorkerStarting' => EndTransaction::class,
-        'Laravel\Octane\Events\RequestReceived' => StartWebTransaction::class,
-        'Laravel\Octane\Events\RequestTerminated' => EndTransaction::class,
+        'Laravel\Octane\Events\WorkerStarting' => [EndTransaction::class],
+        'Laravel\Octane\Events\RequestReceived' => [StartWebTransaction::class],
+        'Laravel\Octane\Events\RequestTerminated' => [NameWebTransaction::class, EndTransaction::class],
     ];
 
     /**
@@ -68,6 +69,7 @@ class NewRelicServiceProvider extends ServiceProvider
         ));
 
         $this->app->singleton(StartWebTransaction::class, fn (Container $app): StartWebTransaction => new StartWebTransaction($app->make(Agent::class), $this->appName($app)));
+        $this->app->singleton(NameWebTransaction::class);
         $this->app->singleton(EndTransaction::class);
         $this->app->singleton(RestartBackgroundTransaction::class, fn (Container $app): RestartBackgroundTransaction => new RestartBackgroundTransaction($app->make(Agent::class), $this->appName($app)));
 
@@ -116,8 +118,10 @@ class NewRelicServiceProvider extends ServiceProvider
         $events = $this->app->make(Dispatcher::class);
 
         if ((bool) $config->get('newrelic.transactions.octane', true)) {
-            foreach (self::OCTANE_EVENTS as $event => $listener) {
-                $events->listen($event, $listener);
+            foreach (self::OCTANE_EVENTS as $event => $listeners) {
+                foreach ($listeners as $listener) {
+                    $events->listen($event, $listener);
+                }
             }
         }
 

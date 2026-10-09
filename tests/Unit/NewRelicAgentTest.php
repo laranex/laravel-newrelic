@@ -17,6 +17,7 @@ it('is a safe no-op when the New Relic extension is not loaded', function (): vo
         ->and($agent->startTransaction())->toBeFalse()
         ->and($agent->endTransaction())->toBeFalse()
         ->and($agent->endTransaction(true))->toBeFalse()
+        ->and($agent->nameTransaction('blogs.show'))->toBeFalse()
         ->and($agent->linkingMetadata())->toBe([]);
 
     $agent->backgroundJob();

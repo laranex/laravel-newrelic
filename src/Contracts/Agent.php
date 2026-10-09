@@ -35,6 +35,11 @@ interface Agent
     public function endTransaction(bool $ignore = false): bool;
 
     /**
+     * Name the current transaction (a custom name, which takes precedence over the agent's own naming).
+     */
+    public function nameTransaction(string $name): bool;
+
+    /**
      * Mark the current transaction as a background job (true) or a web transaction (false).
      */
     public function backgroundJob(bool $flag = true): void;
