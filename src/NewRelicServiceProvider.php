@@ -31,13 +31,14 @@ class NewRelicServiceProvider extends ServiceProvider
     ];
 
     /**
-     * The queue events after which a fresh background transaction starts.
+     * The queue events after which a fresh background transaction starts: every job ends with exactly
+     * one of them, whether it succeeds, is released, or throws (and is retried or fails).
      *
      * @var array<string, class-string>
      */
     public const QUEUE_EVENTS = [
         'Illuminate\Queue\Events\JobProcessed' => RestartBackgroundTransaction::class,
-        'Laravel\Horizon\Events\JobReleased' => RestartBackgroundTransaction::class,
+        'Illuminate\Queue\Events\JobExceptionOccurred' => RestartBackgroundTransaction::class,
     ];
 
     /**

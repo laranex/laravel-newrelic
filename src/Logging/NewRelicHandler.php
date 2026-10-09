@@ -14,7 +14,7 @@ use Monolog\Logger;
 use Monolog\LogRecord;
 
 /**
- * Ships Monolog records to the New Relic Logs API, one HTTP request per record or per batch.
+ * Ships Monolog records to the New Relic Logs API, one HTTP request per record or per batch (split at the 1 MB payload limit).
  *
  * Accepts LogRecord objects and Monolog 2 style array records. Wrap it in a BufferHandler to send one batch per request.
  *
@@ -23,6 +23,11 @@ use Monolog\LogRecord;
 class NewRelicHandler extends AbstractProcessingHandler
 {
     public const ENDPOINT = 'log/v1';
+
+    /**
+     * The largest request body the Logs API accepts, in bytes; bigger batches are split into several requests.
+     */
+    public const MAX_PAYLOAD_BYTES = 1_000_000;
 
     /**
      * @param  string  $licenseKey  The New Relic license (ingest) key
@@ -72,11 +77,14 @@ class NewRelicHandler extends AbstractProcessingHandler
     }
 
     /**
-     * Sends every record at or above the handler's level as one batch.
+     * Sends every record at or above the handler's level as one batch, split into as few
+     * requests as the Logs API payload limit allows.
      */
     public function handleBatch(array $records): void
     {
-        $batch = [];
+        $formatter = $this->getFormatter();
+        $chunk = [];
+        $size = 2;
 
         foreach ($records as $record) {
             if (! $this->isHandling($record)) {
@@ -87,14 +95,22 @@ class NewRelicHandler extends AbstractProcessingHandler
                 $record = $processor($record);
             }
 
-            $batch[] = $record;
+            $json = $formatter->format($record);
+            $length = strlen($json) + 1;
+
+            if ($chunk !== [] && $size + $length > self::MAX_PAYLOAD_BYTES) {
+                $this->send('['.implode(',', $chunk).']');
+                $chunk = [];
+                $size = 2;
+            }
+
+            $chunk[] = $json;
+            $size += $length;
         }
 
-        if ($batch === []) {
-            return;
+        if ($chunk !== []) {
+            $this->send('['.implode(',', $chunk).']');
         }
-
-        $this->send($this->getFormatter()->formatBatch($batch));
     }
 
     /**

@@ -73,11 +73,11 @@ Define the channel yourself to change the level or turn off buffering:
 ],
 ```
 
-With `'buffer' => true` the records are sent as one batch at the end of the request or job. Under Octane and queue workers the buffer is also sent after every `RequestTerminated`, `TaskTerminated`, `TickTerminated`, `JobProcessed` and `JobExceptionOccurred` event, so long-running workers don't hold logs until they exit. This works for a `stack` channel that includes `newrelic` too.
+With `'buffer' => true` the records are sent as one batch at the end of the request or job. Under Octane and queue workers the buffer is also sent after every `RequestTerminated`, `TaskTerminated`, `TickTerminated`, `JobProcessed` and `JobExceptionOccurred` event, so long-running workers don't hold logs until they exit. This works for a `stack` channel that includes `newrelic` too. Batches over the Logs API's 1 MB limit are split into several requests, and a failed delivery is written to PHP's error log instead of throwing, so logging never breaks a request or job.
 
 ### Transactions
 
-Nothing to call: with the agent loaded, each Octane request becomes a web transaction and each processed queue job (including Horizon releases) starts a fresh background transaction, reported to `newrelic.app_name`. Turn either off with `NEW_RELIC_OCTANE_TRANSACTIONS=false` / `NEW_RELIC_QUEUE_TRANSACTIONS=false`.
+Nothing to call: with the agent loaded, each Octane request becomes a web transaction and each queue job (processed or failed) is followed by a fresh background transaction, reported to `newrelic.app_name`. Turn either off with `NEW_RELIC_OCTANE_TRANSACTIONS=false` / `NEW_RELIC_QUEUE_TRANSACTIONS=false`.
 
 ### Call the agent
 
