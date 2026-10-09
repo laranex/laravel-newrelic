@@ -89,7 +89,13 @@ it('leaves queue job transactions to the New Relic agent', function (): void {
     expect(config('newrelic.transactions'))->not->toHaveKey('queue');
 
     foreach (['Illuminate\Queue\Events\JobProcessed', 'Illuminate\Queue\Events\JobExceptionOccurred'] as $event) {
-        expect(Event::getRawListeners()[$event] ?? [])->toBe([FlushLogs::class]);
+        // Older Laravel versions register their own closure listeners on these events: check only the package's.
+        $listeners = array_filter(
+            Event::getRawListeners()[$event] ?? [],
+            fn (mixed $listener): bool => is_string($listener) && str_starts_with($listener, 'Laranex\\LaravelNewrelic\\'),
+        );
+
+        expect(array_values($listeners))->toBe([FlushLogs::class]);
     }
 });
 
