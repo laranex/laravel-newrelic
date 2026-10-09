@@ -87,7 +87,7 @@ class NewRelicServiceProvider extends ServiceProvider
         }
 
         $this->publishes([
-            __DIR__.'/../config/newrelic.php' => config_path('newrelic.php'),
+            __DIR__.'/../config/newrelic.php' => $this->app->configPath('newrelic.php'),
         ], ['newrelic', 'newrelic-config']);
     }
 
