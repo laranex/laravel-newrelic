@@ -6,8 +6,8 @@ use Illuminate\Support\Facades\Event;
 use Laranex\LaravelNewrelic\Contracts\Agent;
 use Laranex\LaravelNewrelic\Contracts\LogTransport;
 use Laranex\LaravelNewrelic\Listeners\EndTransaction;
+use Laranex\LaravelNewrelic\Listeners\FlushLogs;
 use Laranex\LaravelNewrelic\Listeners\NameWebTransaction;
-use Laranex\LaravelNewrelic\Listeners\RestartBackgroundTransaction;
 use Laranex\LaravelNewrelic\Listeners\StartWebTransaction;
 use Laranex\LaravelNewrelic\Logging\CurlTransport;
 use Laranex\LaravelNewrelic\Logging\NewRelicLogger;
@@ -18,14 +18,13 @@ it('merges the package config with its defaults', function (): void {
     expect(config('newrelic.license_key'))->toBe('us-license-key')
         ->and(config('newrelic.host'))->toBeNull()
         ->and(config('newrelic.app_name'))->toBeNull()
-        ->and(config('newrelic.transactions'))->toBe(['octane' => true, 'queue' => true])
+        ->and(config('newrelic.transactions'))->toBe(['octane' => true])
         ->and(config('newrelic.transport'))->toBe(['timeout' => 5, 'retries' => 3]);
 });
 
 it('reads the transaction and transport settings from the environment', function (): void {
     $env = [
         'NEW_RELIC_OCTANE_TRANSACTIONS' => 'false',
-        'NEW_RELIC_QUEUE_TRANSACTIONS' => 'false',
         'NEW_RELIC_LOG_TIMEOUT' => '10',
         'NEW_RELIC_LOG_RETRIES' => '1',
     ];
@@ -37,7 +36,7 @@ it('reads the transaction and transport settings from the environment', function
     try {
         $this->refreshApplication();
 
-        expect(config('newrelic.transactions'))->toBe(['octane' => false, 'queue' => false])
+        expect(config('newrelic.transactions'))->toBe(['octane' => false])
             ->and(config('newrelic.transport'))->toBe(['timeout' => 10, 'retries' => 1]);
     } finally {
         foreach (array_keys($env) as $key) {
@@ -80,9 +79,17 @@ it('registers a ready to use newrelic log channel', function (): void {
     ]);
 });
 
-it('listens to the Octane and queue events by default', function (): void {
-    foreach (NewRelicServiceProvider::OCTANE_EVENTS + NewRelicServiceProvider::QUEUE_EVENTS as $event => $listener) {
-        expect(Event::getRawListeners())->toHaveKey($event);
+it('listens to the Octane events by default', function (): void {
+    foreach (NewRelicServiceProvider::OCTANE_EVENTS as $event => $listeners) {
+        expect(Event::getRawListeners()[$event] ?? [])->toContain(...$listeners);
+    }
+});
+
+it('leaves queue job transactions to the New Relic agent', function (): void {
+    expect(config('newrelic.transactions'))->not->toHaveKey('queue');
+
+    foreach (['Illuminate\Queue\Events\JobProcessed', 'Illuminate\Queue\Events\JobExceptionOccurred'] as $event) {
+        expect(Event::getRawListeners()[$event] ?? [])->toBe([FlushLogs::class]);
     }
 });
 
@@ -96,10 +103,8 @@ it('names a terminated Octane request before ending its transaction', function (
 it('resolves the listeners as singletons with the configured app name', function (): void {
     config()->set('newrelic.app_name', 'Shop API');
     $this->app->forgetInstance(StartWebTransaction::class);
-    $this->app->forgetInstance(RestartBackgroundTransaction::class);
 
     app(StartWebTransaction::class)->handle();
-    app(RestartBackgroundTransaction::class)->handle();
 
     expect(app(StartWebTransaction::class))->toBe(app(StartWebTransaction::class))
         ->and(app(EndTransaction::class))->toBe(app(EndTransaction::class))
@@ -107,9 +112,6 @@ it('resolves the listeners as singletons with the configured app name', function
         ->and($this->agent->calls)->toBe([
             ['startTransaction', 'Shop API'],
             ['backgroundJob', false],
-            ['endTransaction', false],
-            ['startTransaction', 'Shop API'],
-            ['backgroundJob', true],
         ]);
 });
 
@@ -125,10 +127,10 @@ it('publishes the config file under the newrelic tags', function (): void {
     }
 });
 
-it('does not listen to the transaction events when they are turned off', function (string $switch, array $events): void {
-    config()->set('newrelic.transactions.'.$switch, false);
+it('does not listen to the Octane transaction events when they are turned off', function (): void {
+    config()->set('newrelic.transactions.octane', false);
 
-    foreach (array_keys(NewRelicServiceProvider::OCTANE_EVENTS + NewRelicServiceProvider::QUEUE_EVENTS) as $event) {
+    foreach (array_keys(NewRelicServiceProvider::OCTANE_EVENTS) as $event) {
         Event::forget($event);
     }
 
@@ -137,23 +139,15 @@ it('does not listen to the transaction events when they are turned off', functio
     // Inspect the registered listeners directly: hasListeners() is also true when any wildcard listener exists.
     $listeners = Event::getRawListeners();
 
-    foreach ($events as $event => $classes) {
-        foreach ((array) $classes as $listener) {
+    foreach (NewRelicServiceProvider::OCTANE_EVENTS as $event => $classes) {
+        foreach ($classes as $listener) {
             expect($listeners[$event] ?? [])->not->toContain($listener);
         }
     }
 
-    $other = $switch === 'octane' ? NewRelicServiceProvider::QUEUE_EVENTS : NewRelicServiceProvider::OCTANE_EVENTS;
-
-    foreach ($other as $event => $classes) {
-        foreach ((array) $classes as $listener) {
-            expect($listeners[$event] ?? [])->toContain($listener);
-        }
-    }
-})->with([
-    'octane' => ['octane', NewRelicServiceProvider::OCTANE_EVENTS],
-    'queue' => ['queue', NewRelicServiceProvider::QUEUE_EVENTS],
-]);
+    // Logs are still flushed after each request.
+    expect($listeners['Laravel\Octane\Events\RequestTerminated'] ?? [])->toContain(FlushLogs::class);
+});
 
 it('keeps a newrelic channel the application defines itself', function (): void {
     config()->set('logging.channels.newrelic', ['driver' => 'custom', 'via' => NewRelicLogger::class, 'level' => 'error', 'buffer' => false]);

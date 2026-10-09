@@ -34,9 +34,8 @@ return [
     | Application Name
     |--------------------------------------------------------------------------
     |
-    | The APM application that Octane request and queue job transactions are
-    | reported to. When empty, the agent's "newrelic.appname" INI setting
-    | is used.
+    | The APM application that Octane request transactions are reported to.
+    | When empty, the agent's "newrelic.appname" INI setting is used.
     |
     */
 
@@ -47,15 +46,14 @@ return [
     | Transactions
     |--------------------------------------------------------------------------
     |
-    | Split long-running processes into one APM transaction per unit of work:
-    | one web transaction per Octane request, and one background transaction
-    | per processed queue job.
+    | Split Octane workers into one APM web transaction per request, named
+    | after its route. Queue jobs need no setting: the New Relic PHP agent
+    | reports each job as its own background transaction.
     |
     */
 
     'transactions' => [
         'octane' => (bool) env('NEW_RELIC_OCTANE_TRANSACTIONS', true),
-        'queue' => (bool) env('NEW_RELIC_QUEUE_TRANSACTIONS', true),
     ],
 
     /*

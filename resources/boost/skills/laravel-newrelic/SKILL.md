@@ -1,7 +1,7 @@
 ---
 name: laravel-newrelic
 description: >
-  Ship Laravel logs to New Relic Logs and report each Octane request and queue job as its own New Relic APM transaction with laranex/laravel-newrelic. Use when an application logs to New Relic, runs under the New Relic PHP agent, or tests code that does.
+  Ship Laravel logs to New Relic Logs and report each Octane request as its own named New Relic APM transaction with laranex/laravel-newrelic. Use when an application logs to New Relic, runs under the New Relic PHP agent, or tests code that does.
 license: Apache-2.0
 metadata:
   author: Nay Thu Khant
@@ -12,7 +12,8 @@ metadata:
 ## When to use
 
 - The application should send its logs to New Relic Logs (with logs in context when the New Relic PHP agent is installed).
-- The application runs under the New Relic PHP agent with Octane or queue workers, where one long-running process would otherwise report a single endless transaction.
+- The application runs under the New Relic PHP agent with Octane, where one long-running worker would otherwise report a single endless transaction.
+- The application runs queue workers and logs to New Relic: the buffered logs are sent after every job instead of when the worker exits.
 - Code needs New Relic agent calls that keep working where the `newrelic` extension is not loaded (local, CI).
 
 ## Install
@@ -40,7 +41,6 @@ NEW_RELIC_LICENSE_KEY=your-ingest-license-key
 | `NEW_RELIC_LOG_HOST` | `newrelic.host` | picked from the license key's region (`log-api.newrelic.com`, `log-api.eu.newrelic.com`) |
 | `NEW_RELIC_APP_NAME` | `newrelic.app_name` | the agent's `newrelic.appname` INI value |
 | `NEW_RELIC_OCTANE_TRANSACTIONS` | `newrelic.transactions.octane` | `true` |
-| `NEW_RELIC_QUEUE_TRANSACTIONS` | `newrelic.transactions.queue` | `true` |
 | `NEW_RELIC_LOG_TIMEOUT` (seconds) | `newrelic.transport.timeout` | `5` |
 | `NEW_RELIC_LOG_RETRIES` (attempts) | `newrelic.transport.retries` | `3` |
 
@@ -77,7 +77,9 @@ With `'buffer' => true` the records are sent as one batch at the end of the requ
 
 ### Transactions
 
-Nothing to call: with the agent loaded, each Octane request becomes a web transaction and each queue job (processed or failed) is followed by a fresh background transaction, reported to `newrelic.app_name`. Turn either off with `NEW_RELIC_OCTANE_TRANSACTIONS=false` / `NEW_RELIC_QUEUE_TRANSACTIONS=false`.
+Nothing to call: with the agent loaded, each Octane request becomes a web transaction reported to `newrelic.app_name`. Turn it off with `NEW_RELIC_OCTANE_TRANSACTIONS=false`.
+
+Queue jobs need nothing from the package: the New Relic PHP agent instruments Laravel's queue worker itself and reports each job as its own background transaction named `JobClass (connection)` (for example `App\Jobs\SendInvoice (redis)`), with the job's exception recorded when it fails. The package only flushes the buffered logs after each job.
 
 Octane web transactions are named after the matched route when the request terminates: the route name, else the controller action (`App\Http\Controllers\BlogController@show`), else the method and URI pattern (`GET /blogs/{blog}`); requests without a route are named `unknown`. Give routes names for readable transaction names. PHP-FPM requests keep the agent's own naming.
 
@@ -93,9 +95,7 @@ use Laranex\LaravelNewrelic\Contracts\Agent;
 $agent = app(Agent::class);
 
 if ($agent->isLoaded()) {
-    $agent->endTransaction();
-    $agent->startTransaction('Billing');
-    $agent->backgroundJob();
+    $agent->nameTransaction('billing.export');
 }
 ```
 
@@ -140,3 +140,4 @@ Fake `Laranex\LaravelNewrelic\Contracts\Agent` the same way to assert transactio
 - Putting secrets or personal data in the log context; every record is sent to New Relic.
 - Naming Octane transactions after the request URL (`$request->path()`); IDs in URLs create unbounded transaction names. The package already names them after the route.
 - Flushing the buffer by hand in Octane or queue code; the package already does it after each request and job.
+- Starting or ending transactions around queue jobs (for example in `JobProcessed` listeners or job middleware); the agent already gives each job its own named transaction, and restarting it splits the job into duplicate, unnamed transactions.

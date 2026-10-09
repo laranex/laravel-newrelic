@@ -5,7 +5,7 @@
 [![Total Downloads](https://img.shields.io/packagist/dt/laranex/laravel-newrelic.svg?style=flat-square)](https://packagist.org/packages/laranex/laravel-newrelic)
 [![License](https://img.shields.io/packagist/l/laranex/laravel-newrelic.svg?style=flat-square)](LICENSE.md)
 
-New Relic for Laravel: ship logs to New Relic Logs and report each Octane request and queue job as a transaction. Built for humans and AI agents.
+New Relic for Laravel: ship logs to New Relic Logs and report each Octane request as a named transaction. Built for humans and AI agents.
 
 ## Documentation
 

@@ -1,7 +1,7 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
     "name": "laranex/laravel-newrelic",
-    "description": "New Relic for Laravel: ship logs to New Relic Logs and report each Octane request and queue job as a transaction.",
+    "description": "New Relic for Laravel: ship logs to New Relic Logs and report each Octane request as a named transaction.",
     "keywords": [
         "laravel",
         "laranex",
