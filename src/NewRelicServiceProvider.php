@@ -13,7 +13,6 @@ use Laranex\LaravelNewrelic\Contracts\LogTransport;
 use Laranex\LaravelNewrelic\Listeners\EndTransaction;
 use Laranex\LaravelNewrelic\Listeners\FlushLogs;
 use Laranex\LaravelNewrelic\Listeners\NameWebTransaction;
-use Laranex\LaravelNewrelic\Listeners\RestartBackgroundTransaction;
 use Laranex\LaravelNewrelic\Listeners\StartWebTransaction;
 use Laranex\LaravelNewrelic\Logging\CurlTransport;
 use Laranex\LaravelNewrelic\Logging\NewRelicLogger;
@@ -32,18 +31,8 @@ class NewRelicServiceProvider extends ServiceProvider
     ];
 
     /**
-     * The queue events after which a fresh background transaction starts: every job ends with exactly
-     * one of them, whether it succeeds, is released, or throws (and is retried or fails).
-     *
-     * @var array<string, class-string>
-     */
-    public const QUEUE_EVENTS = [
-        'Illuminate\Queue\Events\JobProcessed' => RestartBackgroundTransaction::class,
-        'Illuminate\Queue\Events\JobExceptionOccurred' => RestartBackgroundTransaction::class,
-    ];
-
-    /**
-     * The Octane and queue events after which the buffered "newrelic" records are sent.
+     * The Octane and queue events after which the buffered "newrelic" records are sent. Every queue job
+     * ends with exactly one of the queue events, whether it succeeds, is released, or throws.
      *
      * @var list<string>
      */
@@ -71,7 +60,6 @@ class NewRelicServiceProvider extends ServiceProvider
         $this->app->singleton(StartWebTransaction::class, fn (Container $app): StartWebTransaction => new StartWebTransaction($app->make(Agent::class), $this->appName($app)));
         $this->app->singleton(NameWebTransaction::class);
         $this->app->singleton(EndTransaction::class);
-        $this->app->singleton(RestartBackgroundTransaction::class, fn (Container $app): RestartBackgroundTransaction => new RestartBackgroundTransaction($app->make(Agent::class), $this->appName($app)));
 
         $this->registerLogChannel();
     }
@@ -112,21 +100,20 @@ class NewRelicServiceProvider extends ServiceProvider
         ]);
     }
 
+    /**
+     * Split Octane workers into one web transaction per request. Queue jobs need nothing here:
+     * the New Relic PHP agent already reports each job as its own background transaction.
+     */
     protected function registerTransactionListeners(): void
     {
-        $config = $this->app->make(ConfigRepository::class);
-        $events = $this->app->make(Dispatcher::class);
-
-        if ((bool) $config->get('newrelic.transactions.octane', true)) {
-            foreach (self::OCTANE_EVENTS as $event => $listeners) {
-                foreach ($listeners as $listener) {
-                    $events->listen($event, $listener);
-                }
-            }
+        if (! (bool) $this->app->make(ConfigRepository::class)->get('newrelic.transactions.octane', true)) {
+            return;
         }
 
-        if ((bool) $config->get('newrelic.transactions.queue', true)) {
-            foreach (self::QUEUE_EVENTS as $event => $listener) {
+        $events = $this->app->make(Dispatcher::class);
+
+        foreach (self::OCTANE_EVENTS as $event => $listeners) {
+            foreach ($listeners as $listener) {
                 $events->listen($event, $listener);
             }
         }
