@@ -1,7 +1,7 @@
 # Laravel New Relic
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/laranex/laravel-newrelic.svg?style=flat-square)](https://packagist.org/packages/laranex/laravel-newrelic)
-[![Tests](https://img.shields.io/github/actions/workflow/status/laranex/laravel-newrelic/tests.yml?label=tests&style=flat-square)](https://github.com/laranex/laravel-newrelic/actions/workflows/tests.yml)
+[![Tests](https://github.com/laranex/laravel-newrelic/actions/workflows/tests.yml/badge.svg)](https://github.com/laranex/laravel-newrelic/actions/workflows/tests.yml)
 [![Total Downloads](https://img.shields.io/packagist/dt/laranex/laravel-newrelic.svg?style=flat-square)](https://packagist.org/packages/laranex/laravel-newrelic)
 [![License](https://img.shields.io/packagist/l/laranex/laravel-newrelic.svg?style=flat-square)](LICENSE.md)
 
