@@ -39,7 +39,6 @@ Versions 2 and 3 were skipped so that every Laranex package shares the v4 major.
 - The config file moved from `config/laravel-newrelic.php` to `config/newrelic.php`: rename the published file and any `config('laravel-newrelic.*')` reads to `config('newrelic.*')`. `NEW_RELIC_API_KEY` still works, but `NEW_RELIC_LICENSE_KEY` is the new name.
 - The handler and formatter were renamed to `Logging\NewRelicHandler` and `Logging\NewRelicFormatter`; `NewRelicHandler` now takes a `LogTransport` and the license key in its constructor instead of `setLicenseKey()`/`setHost()`.
 - The listeners were renamed to `Listeners\StartWebTransaction` and `Listeners\EndTransaction`; they depend on the `Contracts\Agent` and no longer call `newrelic_*` directly. `RestartNewrelicTransaction` has no replacement.
-- Queue jobs are named by the New Relic agent itself (`JobClass (connection)`), so there is no `NEW_RELIC_QUEUE_TRANSACTIONS` / `newrelic.transactions.queue` setting: remove it from `.env` and any published `config/newrelic.php`.
 - A missing license key now throws when the channel is built (Laravel falls back to its emergency logger) instead of posting with `NO_LICENSE_KEY_FOUND`.
 
 ## 1.0.0 - 2024-08-30
