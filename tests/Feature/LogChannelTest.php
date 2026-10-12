@@ -32,7 +32,7 @@ it('buffers records and ships them as one batch when the logger is reset', funct
         ->and($this->transport->logs()[0]['context'])->toBe(['order' => 1]);
 });
 
-it('adds the service, hostname, client ip and linking metadata to every record', function (): void {
+it('adds the service, hostname and linking metadata to every record without the client ip', function (): void {
     $this->agent->metadata = ['trace.id' => 'abc', 'span.id' => 'def', 'entity.guid' => 'guid', 'hostname' => 'web-1'];
 
     $this->get('/missing-route', ['X-Forwarded-For' => '203.0.113.9']);
@@ -42,11 +42,33 @@ it('adds the service, hostname, client ip and linking metadata to every record',
     $log = $this->transport->logs()[0];
 
     expect($log)->toMatchArray(['service' => 'Shop', 'hostname' => 'web-1', 'trace.id' => str_pad('abc', 32, '0', STR_PAD_LEFT), 'span.id' => 'def', 'entity.guid' => 'guid'])
-        ->and($log['extra']['ip'])->toBe('127.0.0.1')
+        ->and($log['extra'])->not->toHaveKey('ip')
         ->and($log)->not->toHaveKey('newrelic-context');
 });
 
-it('adds the authenticated user to every record', function (): void {
+it('adds the client ip when it is opted in', function (): void {
+    config()->set('newrelic.logs.include.ip', true);
+
+    $this->get('/missing-route');
+    Log::channel('newrelic')->info('In request');
+    flushNewRelicChannel();
+
+    expect($this->transport->logs()[0]['extra']['ip'])->toBe('127.0.0.1');
+});
+
+it('adds the authenticated user id to every record', function (): void {
+    $user = new User;
+    $user->forceFill(['id' => 7, 'email' => 'jane@example.com']);
+
+    $this->actingAs($user)->get('/missing-route');
+    Log::channel('newrelic')->warning('Suspicious');
+    flushNewRelicChannel();
+
+    expect($this->transport->logs()[0]['user'])->toBe(['id' => 7]);
+});
+
+it('adds the authenticated user email when it is opted in', function (): void {
+    config()->set('newrelic.logs.include.user_email', true);
     $user = new User;
     $user->forceFill(['id' => 7, 'email' => 'jane@example.com']);
 

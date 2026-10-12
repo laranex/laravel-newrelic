@@ -14,14 +14,23 @@ use Monolog\Processor\ProcessorInterface;
 use Throwable;
 
 /**
- * Adds the application name, hostname, client IP and authenticated user to every record.
+ * Adds the application name, hostname and authenticated user's id to every record, plus the client IP
+ * and the user's email when they are opted in.
  *
  * The request and the user are resolved per record, so the metadata stays correct on Octane,
  * where one logger serves many requests.
  */
 class MetadataProcessor implements ProcessorInterface
 {
-    public function __construct(protected Container $container) {}
+    /**
+     * @param  bool  $includeIp  Add the client IP of the current request ("newrelic.logs.include.ip")
+     * @param  bool  $includeUserEmail  Add the authenticated user's email ("newrelic.logs.include.user_email")
+     */
+    public function __construct(
+        protected Container $container,
+        protected bool $includeIp = false,
+        protected bool $includeUserEmail = false,
+    ) {}
 
     /**
      * @param  array<string, mixed>|LogRecord  $record
@@ -38,15 +47,20 @@ class MetadataProcessor implements ProcessorInterface
             return $record;
         }
 
-        $record = Record::withExtra($record, 'ip', $request->getClientIp());
+        if ($this->includeIp) {
+            $record = Record::withExtra($record, 'ip', $request->getClientIp());
+        }
 
         $user = $this->user();
 
         if ($user !== null) {
-            $record = Record::withExtra($record, 'user', [
-                'id' => $user->getAuthIdentifier(),
-                'email' => $this->email($user),
-            ]);
+            $attributes = ['id' => $user->getAuthIdentifier()];
+
+            if ($this->includeUserEmail) {
+                $attributes['email'] = $this->email($user);
+            }
+
+            $record = Record::withExtra($record, 'user', $attributes);
         }
 
         return $record;

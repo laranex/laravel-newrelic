@@ -52,12 +52,20 @@ it('falls back to "Laravel" when the application has no name', function (): void
     expect(extra((new MetadataProcessor($container))(record()))['service'])->toBe('Laravel');
 });
 
-it('adds the client ip of the current request and skips the user when auth is unavailable', function (): void {
+it('leaves out the client ip unless it is opted in', function (): void {
     $container = new Container;
     $container->instance(ConfigRepository::class, new Repository(['app' => ['name' => 'Shop']]));
     $container->instance('request', Request::create('/orders', 'GET', server: ['REMOTE_ADDR' => '10.0.0.9']));
 
-    $record = (new MetadataProcessor($container))(record());
+    expect(extra((new MetadataProcessor($container))(record())))->not->toHaveKey('ip');
+});
+
+it('adds the client ip of the current request when opted in and skips the user when auth is unavailable', function (): void {
+    $container = new Container;
+    $container->instance(ConfigRepository::class, new Repository(['app' => ['name' => 'Shop']]));
+    $container->instance('request', Request::create('/orders', 'GET', server: ['REMOTE_ADDR' => '10.0.0.9']));
+
+    $record = (new MetadataProcessor($container, includeIp: true))(record());
 
     expect(extra($record)['ip'])->toBe('10.0.0.9')
         ->and(extra($record))->not->toHaveKey('user');
@@ -100,7 +108,22 @@ it('adds the user without an email when reading the email attribute throws', fun
     $container->instance('request', Request::create('/orders'));
     $container->instance(AuthFactory::class, $auth);
 
-    expect(extra((new MetadataProcessor($container))(record()))['user'])->toBe(['id' => 7, 'email' => null]);
+    expect(extra((new MetadataProcessor($container, includeUserEmail: true))(record()))['user'])->toBe(['id' => 7, 'email' => null]);
+});
+
+it('adds only the user id unless the email is opted in', function (): void {
+    $guard = Mockery::mock(Guard::class);
+    $guard->shouldReceive('user')->andReturn(new GenericUser(['id' => 7, 'email' => 'jane@example.com']));
+    $auth = Mockery::mock(AuthFactory::class);
+    $auth->shouldReceive('guard')->andReturn($guard);
+
+    $container = new Container;
+    $container->instance(ConfigRepository::class, new Repository(['app' => ['name' => 'Shop']]));
+    $container->instance('request', Request::create('/orders'));
+    $container->instance(AuthFactory::class, $auth);
+
+    expect(extra((new MetadataProcessor($container))(record()))['user'])->toBe(['id' => 7])
+        ->and(extra((new MetadataProcessor($container, includeUserEmail: true))(record()))['user'])->toBe(['id' => 7, 'email' => 'jane@example.com']);
 });
 
 it('reads and writes records of the installed Monolog version', function (): void {

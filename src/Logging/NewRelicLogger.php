@@ -46,7 +46,11 @@ class NewRelicLogger
         $logger = new Logger(is_string($name) ? $name : 'newrelic');
         $logger->pushHandler(($config['buffer'] ?? true) ? new NewRelicBufferHandler($handler, 0, $level, $bubble) : $handler);
         $logger->pushProcessor(new NewRelicProcessor($this->agent));
-        $logger->pushProcessor(new MetadataProcessor($this->container));
+        $logger->pushProcessor(new MetadataProcessor(
+            $this->container,
+            $this->boolConfig('logs.include.ip'),
+            $this->boolConfig('logs.include.user_email'),
+        ));
 
         return $logger;
     }
@@ -67,6 +71,11 @@ class NewRelicLogger
     protected function host(): ?string
     {
         return $this->packageConfig('host');
+    }
+
+    protected function boolConfig(string $key): bool
+    {
+        return (bool) $this->container->make(ConfigRepository::class)->get('newrelic.'.$key, false);
     }
 
     protected function packageConfig(string $key): ?string

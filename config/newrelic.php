@@ -58,6 +58,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Log Metadata
+    |--------------------------------------------------------------------------
+    |
+    | Every record carries the service name, the hostname and the
+    | authenticated user's id. The client IP address and the user's
+    | email are personal data, so they are only sent when enabled.
+    |
+    */
+
+    'logs' => [
+        'include' => [
+            'ip' => (bool) env('NEW_RELIC_LOG_INCLUDE_IP', false),
+            'user_email' => (bool) env('NEW_RELIC_LOG_INCLUDE_USER_EMAIL', false),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Logs API Transport
     |--------------------------------------------------------------------------
     |

@@ -19,6 +19,7 @@ it('merges the package config with its defaults', function (): void {
         ->and(config('newrelic.host'))->toBeNull()
         ->and(config('newrelic.app_name'))->toBeNull()
         ->and(config('newrelic.transactions'))->toBe(['octane' => true])
+        ->and(config('newrelic.logs'))->toBe(['include' => ['ip' => false, 'user_email' => false]])
         ->and(config('newrelic.transport'))->toBe(['timeout' => 5, 'retries' => 3]);
 });
 
@@ -27,6 +28,8 @@ it('reads the transaction and transport settings from the environment', function
         'NEW_RELIC_OCTANE_TRANSACTIONS' => 'false',
         'NEW_RELIC_LOG_TIMEOUT' => '10',
         'NEW_RELIC_LOG_RETRIES' => '1',
+        'NEW_RELIC_LOG_INCLUDE_IP' => 'true',
+        'NEW_RELIC_LOG_INCLUDE_USER_EMAIL' => 'true',
     ];
 
     foreach ($env as $key => $value) {
@@ -37,6 +40,7 @@ it('reads the transaction and transport settings from the environment', function
         $this->refreshApplication();
 
         expect(config('newrelic.transactions'))->toBe(['octane' => false])
+            ->and(config('newrelic.logs'))->toBe(['include' => ['ip' => true, 'user_email' => true]])
             ->and(config('newrelic.transport'))->toBe(['timeout' => 10, 'retries' => 1]);
     } finally {
         foreach (array_keys($env) as $key) {

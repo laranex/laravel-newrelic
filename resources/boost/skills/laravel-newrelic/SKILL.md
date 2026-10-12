@@ -41,6 +41,8 @@ NEW_RELIC_LICENSE_KEY=your-ingest-license-key
 | `NEW_RELIC_LOG_HOST` | `newrelic.host` | picked from the license key's region (`log-api.newrelic.com`, `log-api.eu.newrelic.com`) |
 | `NEW_RELIC_APP_NAME` | `newrelic.app_name` | the agent's `newrelic.appname` INI value |
 | `NEW_RELIC_OCTANE_TRANSACTIONS` | `newrelic.transactions.octane` | `true` |
+| `NEW_RELIC_LOG_INCLUDE_IP` | `newrelic.logs.include.ip` | `false` |
+| `NEW_RELIC_LOG_INCLUDE_USER_EMAIL` | `newrelic.logs.include.user_email` | `false` |
 | `NEW_RELIC_LOG_TIMEOUT` (seconds) | `newrelic.transport.timeout` | `5` |
 | `NEW_RELIC_LOG_RETRIES` (attempts) | `newrelic.transport.retries` | `3` |
 
@@ -57,7 +59,7 @@ Log::info('Order placed', ['order_id' => $order->id]);
 Log::channel('newrelic')->error('Payment failed', ['order_id' => $order->id]);
 ```
 
-Every record gets `service` (the app name), `hostname`, the client `ip`, the authenticated `user` and, when the agent is loaded, the `trace.id`, `span.id` and `entity.guid` that link it to its APM transaction. Put business data in the log context.
+Every record gets `service` (the app name), `hostname`, the authenticated `user` as `{"id": …}` and, when the agent is loaded, the `trace.id`, `span.id` and `entity.guid` that link it to its APM transaction. The client IP (`extra.ip`) and the user's email (`user.email`) are personal data and are only sent when `NEW_RELIC_LOG_INCLUDE_IP` or `NEW_RELIC_LOG_INCLUDE_USER_EMAIL` is `true`. Put business data in the log context.
 
 ### Tune the channel
 
