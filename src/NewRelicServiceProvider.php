@@ -12,6 +12,7 @@ use Laranex\LaravelNewrelic\Contracts\Agent;
 use Laranex\LaravelNewrelic\Contracts\LogTransport;
 use Laranex\LaravelNewrelic\Listeners\EndTransaction;
 use Laranex\LaravelNewrelic\Listeners\FlushLogs;
+use Laranex\LaravelNewrelic\Listeners\ForgetLogUser;
 use Laranex\LaravelNewrelic\Listeners\NameWebTransaction;
 use Laranex\LaravelNewrelic\Listeners\StartWebTransaction;
 use Laranex\LaravelNewrelic\Logging\CurlTransport;
@@ -45,6 +46,27 @@ class NewRelicServiceProvider extends ServiceProvider
     ];
 
     /**
+     * The events after which the "newrelic" channel resolves the authenticated user again: the start and
+     * end of every Octane request, task, tick and queue job, and every login, logout or user change.
+     *
+     * @var list<string>
+     */
+    public const FORGET_USER_EVENTS = [
+        'Laravel\Octane\Events\RequestReceived',
+        'Laravel\Octane\Events\RequestTerminated',
+        'Laravel\Octane\Events\TaskReceived',
+        'Laravel\Octane\Events\TaskTerminated',
+        'Laravel\Octane\Events\TickReceived',
+        'Laravel\Octane\Events\TickTerminated',
+        'Illuminate\Queue\Events\JobProcessing',
+        'Illuminate\Queue\Events\JobProcessed',
+        'Illuminate\Queue\Events\JobExceptionOccurred',
+        'Illuminate\Auth\Events\Authenticated',
+        'Illuminate\Auth\Events\Login',
+        'Illuminate\Auth\Events\Logout',
+    ];
+
+    /**
      * Register any application services.
      */
     public function register(): void
@@ -71,7 +93,7 @@ class NewRelicServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->registerTransactionListeners();
-        $this->registerFlushListener();
+        $this->registerLogListeners();
 
         if (! $this->app->runningInConsole()) {
             return;
@@ -121,11 +143,15 @@ class NewRelicServiceProvider extends ServiceProvider
     }
 
     /**
-     * Send the buffered records after every unit of work, since Octane and queue workers do not exit in between.
+     * Send the buffered records after every unit of work, since Octane and queue workers do not exit in between,
+     * and resolve the logged user again for every unit of work, so a worker never logs one with another's user.
      */
-    protected function registerFlushListener(): void
+    protected function registerLogListeners(): void
     {
-        $this->app->make(Dispatcher::class)->listen(self::FLUSH_EVENTS, FlushLogs::class);
+        $events = $this->app->make(Dispatcher::class);
+
+        $events->listen(self::FLUSH_EVENTS, FlushLogs::class);
+        $events->listen(self::FORGET_USER_EVENTS, ForgetLogUser::class);
     }
 
     protected function intConfig(Container $app, string $key, int $default): int

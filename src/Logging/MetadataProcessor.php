@@ -11,17 +11,23 @@ use Illuminate\Contracts\Container\Container;
 use Illuminate\Http\Request;
 use Monolog\LogRecord;
 use Monolog\Processor\ProcessorInterface;
+use Monolog\ResettableInterface;
 use Throwable;
 
 /**
  * Adds the application name, hostname and authenticated user's id to every record, plus the client IP
  * and the user's email when they are opted in.
  *
- * The request and the user are resolved per record, so the metadata stays correct on Octane,
- * where one logger serves many requests.
+ * The request is resolved per record, so the metadata stays correct on Octane, where one logger serves
+ * many requests. The user is resolved once and reused until reset(), which the package calls when an
+ * Octane request or queue job starts or ends and when a user logs in or out.
  */
-class MetadataProcessor implements ProcessorInterface
+class MetadataProcessor implements ProcessorInterface, ResettableInterface
 {
+    protected bool $userResolved = false;
+
+    protected ?Authenticatable $user = null;
+
     /**
      * @param  bool  $includeIp  Add the client IP of the current request ("newrelic.logs.include.ip")
      * @param  bool  $includeUserEmail  Add the authenticated user's email ("newrelic.logs.include.user_email")
@@ -94,7 +100,26 @@ class MetadataProcessor implements ProcessorInterface
         return $this->container->make('request');
     }
 
+    /**
+     * Forget the resolved user, so the next record resolves it again.
+     */
+    public function reset(): void
+    {
+        $this->userResolved = false;
+        $this->user = null;
+    }
+
     protected function user(): ?Authenticatable
+    {
+        if (! $this->userResolved) {
+            $this->user = $this->resolveUser();
+            $this->userResolved = true;
+        }
+
+        return $this->user;
+    }
+
+    protected function resolveUser(): ?Authenticatable
     {
         if (! $this->container->bound(AuthFactory::class)) {
             return null;

@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace Laranex\LaravelNewrelic\Listeners;
 
 use Illuminate\Contracts\Container\Container;
-use Illuminate\Log\Logger as IlluminateLogger;
-use Illuminate\Log\LogManager;
+use Laranex\LaravelNewrelic\Listeners\Concerns\ResolvesLoggers;
 use Laranex\LaravelNewrelic\Logging\NewRelicBufferHandler;
-use Monolog\Logger;
 
 /**
  * Sends the buffered "newrelic" records after each Octane request or queue job.
@@ -17,21 +15,13 @@ use Monolog\Logger;
  */
 class FlushLogs
 {
+    use ResolvesLoggers;
+
     public function __construct(protected Container $container) {}
 
     public function handle(): void
     {
-        if (! $this->container->resolved('log')) {
-            return;
-        }
-
-        foreach ($this->container->make(LogManager::class)->getChannels() as $channel) {
-            $logger = $channel instanceof IlluminateLogger ? $channel->getLogger() : $channel;
-
-            if (! $logger instanceof Logger) {
-                continue;
-            }
-
+        foreach ($this->loggers() as $logger) {
             foreach ($logger->getHandlers() as $handler) {
                 if ($handler instanceof NewRelicBufferHandler) {
                     $handler->flush();

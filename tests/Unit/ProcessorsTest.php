@@ -140,3 +140,24 @@ it('creates the extra array when a Monolog 2 record has none', function (): void
 
     expect($record)->toBe(['message' => 'bare', 'extra' => ['service' => 'Shop']]);
 });
+
+it('resolves the user once and again after a reset', function (): void {
+    $guard = Mockery::mock(Guard::class);
+    $guard->shouldReceive('user')->twice()->andReturn(new GenericUser(['id' => 1]), new GenericUser(['id' => 2]));
+    $auth = Mockery::mock(AuthFactory::class);
+    $auth->shouldReceive('guard')->andReturn($guard);
+
+    $container = new Container;
+    $container->instance(ConfigRepository::class, new Repository(['app' => ['name' => 'Shop']]));
+    $container->instance('request', Request::create('/orders'));
+    $container->instance(AuthFactory::class, $auth);
+
+    $processor = new MetadataProcessor($container);
+    $first = extra($processor(record()))['user'];
+    $cached = extra($processor(record()))['user'];
+    $processor->reset();
+
+    expect($first)->toBe(['id' => 1])
+        ->and($cached)->toBe(['id' => 1])
+        ->and(extra($processor(record()))['user'])->toBe(['id' => 2]);
+});

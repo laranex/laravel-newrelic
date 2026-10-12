@@ -7,6 +7,7 @@ use Laranex\LaravelNewrelic\Contracts\Agent;
 use Laranex\LaravelNewrelic\Contracts\LogTransport;
 use Laranex\LaravelNewrelic\Listeners\EndTransaction;
 use Laranex\LaravelNewrelic\Listeners\FlushLogs;
+use Laranex\LaravelNewrelic\Listeners\ForgetLogUser;
 use Laranex\LaravelNewrelic\Listeners\NameWebTransaction;
 use Laranex\LaravelNewrelic\Listeners\StartWebTransaction;
 use Laranex\LaravelNewrelic\Logging\CurlTransport;
@@ -101,7 +102,7 @@ it('leaves queue job transactions to the New Relic agent', function (): void {
             fn (mixed $listener): bool => is_string($listener) && str_starts_with($listener, 'Laranex\\LaravelNewrelic\\'),
         );
 
-        expect(array_values($listeners))->toBe([FlushLogs::class]);
+        expect(array_values($listeners))->toBe([FlushLogs::class, ForgetLogUser::class]);
     }
 });
 

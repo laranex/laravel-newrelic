@@ -61,7 +61,7 @@ Log::info('Order placed', ['order_id' => $order->id]);
 Log::channel('newrelic')->error('Payment failed', ['order_id' => $order->id]);
 ```
 
-Every record gets `service` (the app name), `hostname`, the authenticated `user` as `{"id": …}` and, when the agent is loaded, the `trace.id`, `span.id` and `entity.guid` that link it to its APM transaction. The client IP (`extra.ip`) and the user's email (`user.email`) are personal data and are only sent when `NEW_RELIC_LOG_INCLUDE_IP` or `NEW_RELIC_LOG_INCLUDE_USER_EMAIL` is `true`. Put business data in the log context.
+Every record gets `service` (the app name), `hostname`, the authenticated `user` as `{"id": …}` and, when the agent is loaded, the `trace.id`, `span.id` and `entity.guid` that link it to its APM transaction. The client IP (`extra.ip`) and the user's email (`user.email`) are personal data and are only sent when `NEW_RELIC_LOG_INCLUDE_IP` or `NEW_RELIC_LOG_INCLUDE_USER_EMAIL` is `true`. The user is resolved once per request or job and resolved again when an Octane request, task or tick or a queue job starts or ends and on every login, logout or `Authenticated` event, so a worker never logs one request with another's user. Put business data in the log context.
 
 ### Tune the channel
 
