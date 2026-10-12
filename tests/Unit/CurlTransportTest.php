@@ -9,6 +9,10 @@ it('implements the log transport contract', function (): void {
     expect(new CurlTransport)->toBeInstanceOf(LogTransport::class);
 });
 
+it('defaults to a 5 second request, a 2 second connection and one attempt', function (): void {
+    expect((fn (): array => [$this->timeout, $this->connectTimeout, $this->retries])->call(new CurlTransport))->toBe([5, 2, 1]);
+});
+
 it('writes a failed delivery to the error log instead of throwing', function (int $retries): void {
     $errorLog = (string) tempnam(sys_get_temp_dir(), 'newrelic-error-log');
     // Set inside the test body: PHPUnit points error_log at its own capture file before each test runs.

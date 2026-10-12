@@ -99,6 +99,37 @@ it('builds the logger with a buffered handler and the channel name', function ()
         ->and(app(NewRelicLogger::class)(['name' => 'custom', 'buffer' => false])->getHandlers()[0])->not->toBeInstanceOf(BufferHandler::class);
 });
 
+it('sends the buffer early once it holds the configured number of records', function (): void {
+    config()->set('newrelic.logs.buffer_limit', 2);
+
+    Log::channel('newrelic')->info('One');
+    Log::channel('newrelic')->info('Two');
+
+    expect($this->transport->requests)->toBeEmpty();
+
+    Log::channel('newrelic')->info('Three');
+
+    expect($this->transport->requests)->toHaveCount(1)
+        ->and(array_column($this->transport->logs(0), 'message'))->toBe(['One', 'Two']);
+
+    flushNewRelicChannel();
+
+    expect(array_column($this->transport->logs(1), 'message'))->toBe(['Three']);
+});
+
+it('limits the buffer to 1000 records by default and accepts 0 for no limit', function (mixed $configured, int $limit): void {
+    config()->set('newrelic.logs.buffer_limit', $configured);
+
+    $handler = app(NewRelicLogger::class)(['level' => 'debug'])->getHandlers()[0];
+
+    expect((fn (): array => [$this->bufferLimit, $this->flushOnOverflow])->call($handler))->toBe([$limit, true]);
+})->with([
+    'default' => [1000, 1000],
+    'unlimited' => [0, 0],
+    'negative' => [-5, 0],
+    'not numeric' => ['many', 1000],
+]);
+
 it('uses the agent license key when none is configured', function (): void {
     config()->set('newrelic.license_key', null);
     $this->agent->licenseKey = 'eu01xx0123456789abcdef0123456789abcdef01';

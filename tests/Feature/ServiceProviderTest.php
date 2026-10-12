@@ -19,15 +19,17 @@ it('merges the package config with its defaults', function (): void {
         ->and(config('newrelic.host'))->toBeNull()
         ->and(config('newrelic.app_name'))->toBeNull()
         ->and(config('newrelic.transactions'))->toBe(['octane' => true])
-        ->and(config('newrelic.logs'))->toBe(['include' => ['ip' => false, 'user_email' => false]])
-        ->and(config('newrelic.transport'))->toBe(['timeout' => 5, 'retries' => 3]);
+        ->and(config('newrelic.logs'))->toBe(['buffer_limit' => 1000, 'include' => ['ip' => false, 'user_email' => false]])
+        ->and(config('newrelic.transport'))->toBe(['timeout' => 5, 'connect_timeout' => 2, 'retries' => 1]);
 });
 
 it('reads the transaction and transport settings from the environment', function (): void {
     $env = [
         'NEW_RELIC_OCTANE_TRANSACTIONS' => 'false',
         'NEW_RELIC_LOG_TIMEOUT' => '10',
-        'NEW_RELIC_LOG_RETRIES' => '1',
+        'NEW_RELIC_LOG_CONNECT_TIMEOUT' => '3',
+        'NEW_RELIC_LOG_RETRIES' => '2',
+        'NEW_RELIC_LOG_BUFFER_LIMIT' => '50',
         'NEW_RELIC_LOG_INCLUDE_IP' => 'true',
         'NEW_RELIC_LOG_INCLUDE_USER_EMAIL' => 'true',
     ];
@@ -40,8 +42,8 @@ it('reads the transaction and transport settings from the environment', function
         $this->refreshApplication();
 
         expect(config('newrelic.transactions'))->toBe(['octane' => false])
-            ->and(config('newrelic.logs'))->toBe(['include' => ['ip' => true, 'user_email' => true]])
-            ->and(config('newrelic.transport'))->toBe(['timeout' => 10, 'retries' => 1]);
+            ->and(config('newrelic.logs'))->toBe(['buffer_limit' => 50, 'include' => ['ip' => true, 'user_email' => true]])
+            ->and(config('newrelic.transport'))->toBe(['timeout' => 10, 'connect_timeout' => 3, 'retries' => 2]);
     } finally {
         foreach (array_keys($env) as $key) {
             putenv($key);
@@ -49,21 +51,21 @@ it('reads the transaction and transport settings from the environment', function
     }
 });
 
-it('builds the transport from the configured timeout and retries', function (): void {
-    config()->set('newrelic.transport', ['timeout' => 12, 'retries' => 2]);
+it('builds the transport from the configured timeouts and retries', function (): void {
+    config()->set('newrelic.transport', ['timeout' => 12, 'connect_timeout' => 4, 'retries' => 2]);
     $this->app->forgetInstance(LogTransport::class);
 
     $transport = app(LogTransport::class);
 
     expect($transport)->toBeInstanceOf(CurlTransport::class)
-        ->and((fn (): array => [$this->timeout, $this->retries])->call($transport))->toBe([12, 2]);
+        ->and((fn (): array => [$this->timeout, $this->connectTimeout, $this->retries])->call($transport))->toBe([12, 4, 2]);
 });
 
 it('falls back to the default transport settings when the config is not numeric', function (): void {
-    config()->set('newrelic.transport', ['timeout' => 'soon', 'retries' => null]);
+    config()->set('newrelic.transport', ['timeout' => 'soon', 'connect_timeout' => 'fast', 'retries' => null]);
     $this->app->forgetInstance(LogTransport::class);
 
-    expect((fn (): array => [$this->timeout, $this->retries])->call(app(LogTransport::class)))->toBe([5, 3]);
+    expect((fn (): array => [$this->timeout, $this->connectTimeout, $this->retries])->call(app(LogTransport::class)))->toBe([5, 2, 1]);
 });
 
 it('binds the agent and the transport as singletons', function (): void {

@@ -19,8 +19,9 @@ class CurlTransport implements LogTransport
     /**
      * @param  int  $timeout  Seconds to wait for the whole request
      * @param  int  $retries  Attempts before giving up on a failed request (at least one is always made)
+     * @param  int  $connectTimeout  Seconds to wait for the connection, capped at the whole request's timeout
      */
-    public function __construct(protected int $timeout = 5, protected int $retries = 3) {}
+    public function __construct(protected int $timeout = 5, protected int $retries = 1, protected int $connectTimeout = 2) {}
 
     public function send(string $url, array $headers, string $body): void
     {
@@ -44,7 +45,7 @@ class CurlTransport implements LogTransport
         curl_setopt($handle, CURLOPT_POSTFIELDS, $body);
         curl_setopt($handle, CURLOPT_HTTPHEADER, $headerLines);
         curl_setopt($handle, CURLOPT_TIMEOUT, $this->timeout);
-        curl_setopt($handle, CURLOPT_CONNECTTIMEOUT, $this->timeout);
+        curl_setopt($handle, CURLOPT_CONNECTTIMEOUT, min($this->connectTimeout, $this->timeout));
 
         try {
             Util::execute($handle, max(1, $this->retries));

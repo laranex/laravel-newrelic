@@ -43,8 +43,10 @@ NEW_RELIC_LICENSE_KEY=your-ingest-license-key
 | `NEW_RELIC_OCTANE_TRANSACTIONS` | `newrelic.transactions.octane` | `true` |
 | `NEW_RELIC_LOG_INCLUDE_IP` | `newrelic.logs.include.ip` | `false` |
 | `NEW_RELIC_LOG_INCLUDE_USER_EMAIL` | `newrelic.logs.include.user_email` | `false` |
+| `NEW_RELIC_LOG_BUFFER_LIMIT` (records, `0` = no limit) | `newrelic.logs.buffer_limit` | `1000` |
 | `NEW_RELIC_LOG_TIMEOUT` (seconds) | `newrelic.transport.timeout` | `5` |
-| `NEW_RELIC_LOG_RETRIES` (attempts) | `newrelic.transport.retries` | `3` |
+| `NEW_RELIC_LOG_CONNECT_TIMEOUT` (seconds) | `newrelic.transport.connect_timeout` | `2` |
+| `NEW_RELIC_LOG_RETRIES` (attempts) | `newrelic.transport.retries` | `1` |
 
 ## Use
 
@@ -75,7 +77,7 @@ Define the channel yourself to change the level or turn off buffering:
 ],
 ```
 
-With `'buffer' => true` the records are sent as one batch at the end of the request or job. Under Octane and queue workers the buffer is also sent after every `RequestTerminated`, `TaskTerminated`, `TickTerminated`, `JobProcessed` and `JobExceptionOccurred` event, so long-running workers don't hold logs until they exit. This works for a `stack` channel that includes `newrelic` too. Batches over the Logs API's 1 MB limit are split into several requests, and a failed delivery is written to PHP's error log instead of throwing, so logging never breaks a request or job.
+With `'buffer' => true` the records are sent as one batch at the end of the request or job. Under Octane and queue workers the buffer is also sent after every `RequestTerminated`, `TaskTerminated`, `TickTerminated`, `JobProcessed` and `JobExceptionOccurred` event, so long-running workers don't hold logs until they exit. This works for a `stack` channel that includes `newrelic` too. Once the buffer holds `newrelic.logs.buffer_limit` records (1000 by default) it is sent early, so a long request, job or worker never grows memory without bound. The batch is sent synchronously, so a slow Logs API delays the worker by up to the transport timeout per attempt; keep the timeouts and retries low. Batches over the Logs API's 1 MB limit are split into several requests, and a failed delivery is written to PHP's error log instead of throwing, so logging never breaks a request or job.
 
 ### Transactions
 

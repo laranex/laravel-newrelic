@@ -58,16 +58,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Log Metadata
+    | Logs
     |--------------------------------------------------------------------------
     |
     | Every record carries the service name, the hostname and the
     | authenticated user's id. The client IP address and the user's
     | email are personal data, so they are only sent when enabled.
     |
+    | The buffered channel sends its records after each request or job,
+    | and early once it holds "buffer_limit" records, so long-running
+    | processes never grow without bound (0 removes the limit).
+    |
     */
 
     'logs' => [
+        'buffer_limit' => (int) env('NEW_RELIC_LOG_BUFFER_LIMIT', 1000),
         'include' => [
             'ip' => (bool) env('NEW_RELIC_LOG_INCLUDE_IP', false),
             'user_email' => (bool) env('NEW_RELIC_LOG_INCLUDE_USER_EMAIL', false),
@@ -79,15 +84,17 @@ return [
     | Logs API Transport
     |--------------------------------------------------------------------------
     |
-    | The number of seconds to wait for the Logs API (used for both the
-    | connection and the whole request) and the number of attempts made
-    | before a failed request is given up.
+    | The number of seconds to wait for the whole Logs API request and
+    | for its connection, and the number of attempts made before a
+    | failed request is given up. Logs are sent synchronously after
+    | each request or job, so keep these short.
     |
     */
 
     'transport' => [
         'timeout' => (int) env('NEW_RELIC_LOG_TIMEOUT', 5),
-        'retries' => (int) env('NEW_RELIC_LOG_RETRIES', 3),
+        'connect_timeout' => (int) env('NEW_RELIC_LOG_CONNECT_TIMEOUT', 2),
+        'retries' => (int) env('NEW_RELIC_LOG_RETRIES', 1),
     ],
 
 ];

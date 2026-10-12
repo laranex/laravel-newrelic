@@ -44,7 +44,9 @@ class NewRelicLogger
         );
 
         $logger = new Logger(is_string($name) ? $name : 'newrelic');
-        $logger->pushHandler(($config['buffer'] ?? true) ? new NewRelicBufferHandler($handler, 0, $level, $bubble) : $handler);
+        $logger->pushHandler(($config['buffer'] ?? true)
+            ? new NewRelicBufferHandler($handler, $this->bufferLimit(), $level, $bubble, flushOnOverflow: true)
+            : $handler);
         $logger->pushProcessor(new NewRelicProcessor($this->agent));
         $logger->pushProcessor(new MetadataProcessor(
             $this->container,
@@ -71,6 +73,16 @@ class NewRelicLogger
     protected function host(): ?string
     {
         return $this->packageConfig('host');
+    }
+
+    /**
+     * The number of records held before the buffer is sent early (0 holds every record until the flush).
+     */
+    protected function bufferLimit(): int
+    {
+        $limit = $this->container->make(ConfigRepository::class)->get('newrelic.logs.buffer_limit', 1000);
+
+        return is_numeric($limit) ? max(0, (int) $limit) : 1000;
     }
 
     protected function boolConfig(string $key): bool

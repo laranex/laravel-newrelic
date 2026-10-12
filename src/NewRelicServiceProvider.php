@@ -54,7 +54,8 @@ class NewRelicServiceProvider extends ServiceProvider
         $this->app->singleton(Agent::class, NewRelicAgent::class);
         $this->app->singleton(LogTransport::class, fn (Container $app): CurlTransport => new CurlTransport(
             $this->intConfig($app, 'newrelic.transport.timeout', 5),
-            $this->intConfig($app, 'newrelic.transport.retries', 3),
+            $this->intConfig($app, 'newrelic.transport.retries', 1),
+            $this->intConfig($app, 'newrelic.transport.connect_timeout', 2),
         ));
 
         $this->app->singleton(StartWebTransaction::class, fn (Container $app): StartWebTransaction => new StartWebTransaction($app->make(Agent::class), $this->appName($app)));
